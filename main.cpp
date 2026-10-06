@@ -11,45 +11,64 @@ struct Task{
     double actualScore;
 };
 
+
+//create task
+void addTask(vector<Task>& tasks){
+    Task t;
+
+    cout << "Enter task name: ";
+    getline(cin, t.name);
+
+    cout << "Enter expected score: ";
+    cin >> t.expectedScore;
+
+    cout << "Enter actual score: ";
+    cin >> t.actualScore;
+
+    cin.ignore();
+
+    tasks.push_back(t);
+}
+
+void viewTasks(const vector<Task>& tasks){
+    for (const Task& task : tasks){
+        //print task data
+        cout << "Task details:\n";
+        cout << "name: " << task.name << "\n";
+        cout << "expected score: " << task.expectedScore << "\n";
+        cout << "actual score: " << task.actualScore << "\n";
+
+        //calculate the guidance score for each referenced task
+        double guidanceScore = task.actualScore - task.expectedScore;
+        cout << "Guidance Score: " << guidanceScore << "\n";
+        cout << "-----------------------------\n";
+    }
+}
+
 int main(){
     vector<Task> tasks;
-    char continueAdding = 'y';
-    while (continueAdding == 'y' || continueAdding == 'Y'){
-        Task t;
+    bool active = true;
+    while(active){
+        cout << "1. Add Task\n";
+        cout << "2. View Tasks\n";
+        cout << "3. Exit\n";
+        int choice;
+        cin >> choice;
+        cin.ignore();
 
-        cout << "Enter task name: ";
-
-        getline(cin, t.name);
-
-        cout << "Enter exepected score: ";
-        cin >> t.expectedScore;
-
-        cout << "Enter actual score: ";
-        cin >> t.actualScore;
-
-        //cin.ignore();
-
-        tasks.push_back(t);
-
-        double guidanceScore = t.actualScore - t.expectedScore;
-
-
-        //inform the user that the task was successfully added to the vector
-        cout << "\nTask added successfully! \n";
-
-        //print the task details
-        cout << "Task details:\n";
-        cout << "name: " << tasks[0].name << "\n";
-        cout << "expected score: " << tasks[0].expectedScore << "\n";
-        cout << "actual score: " << tasks[0].actualScore << "\n";
-        //print the guidance score of the task, not included in the task struct
-        cout << "guidance score: " << guidanceScore << "\n";
-
-
-        //check if the user wants to add another task
-        cout << "Do you want to add another task? (y/n): ";
-        cin >> continueAdding; // Read the user's choice
-        cin.ignore(); // Ignore any newline character left in the buffer
+        switch(choice){
+            case 1:
+                addTask(tasks);
+                break;
+            case 2:
+                viewTasks(tasks);
+                break;
+            case 3:
+                active = false;
+                break;
+            default:
+                cout << "Invalid choice. Please try again.\n";
+        }
     }
 
     return 0;
