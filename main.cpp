@@ -15,24 +15,68 @@ struct Task{
 //create task
 void addTask(vector<Task>& tasks){
     Task t;
+    bool validScore = false;
 
     cout << "Enter task name: ";
     getline(cin, t.name);
 
-    cout << "Enter expected score: ";
-    if (!(cin >> t.expectedScore)){
-        cout << "Invalid input. Please enter a number.\n";
-        cin.clear();
-        cin.ignore(1000, '\n');
-        return;
+    //validate expected score input
+    while (!validScore){
+        cout << "Enter expected score: ";
+
+        if (cin >> t.expectedScore){
+            if (t.expectedScore >= 0 && t.expectedScore <= 1000){
+                validScore = true;
+            }
+            else{
+                cout << "Score must be between 0 and 1000.\n";
+            }
+        }
+        else{
+            cout << "Invalid input. Please enter a number.\n";
+            cin.clear();
+            cin.ignore(1000, '\n');
+        }
     }
 
-    if (!(cin >> t.actualScore)){
+    validScore = false;
+
+    while (!validScore){
+        cout << "Enter actual score: ";
+
+        if (cin >> t.actualScore){
+            if (t.actualScore >= 0 && t.actualScore <= 1000){
+                validScore = true;
+            }
+            else{
+                cout << "Score must be between 0 and 1000.\n";
+            }
+        }
+        else{
+            cout << "Invalid input. Please enter a number.\n";
+            cin.clear();
+            cin.ignore(1000, '\n');
+        }
+    }
+    /*
+    cout << "Enter expected score: ";
+    while (!(cin >> t.expectedScore)){
         cout << "Invalid input. Please enter a number.\n";
         cin.clear();
         cin.ignore(1000, '\n');
-        return;
+
+        cout << "Enter expected score: ";
     }
+
+    cout<< "enter actual score: ";
+    while (!(cin >> t.actualScore)){
+        cout << "Invalid input. Please enter a number.\n";
+        cin.clear();
+        cin.ignore(1000, '\n');
+
+        cout << "Enter actual score: ";
+    }
+    */
 
     cin.ignore();
 
