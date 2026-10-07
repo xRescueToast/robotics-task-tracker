@@ -20,16 +20,26 @@ void addTask(vector<Task>& tasks){
     getline(cin, t.name);
 
     cout << "Enter expected score: ";
-    cin >> t.expectedScore;
+    if (!(cin >> t.expectedScore)){
+        cout << "Invalid input. Please enter a number.\n";
+        cin.clear();
+        cin.ignore(1000, '\n');
+        return;
+    }
 
-    cout << "Enter actual score: ";
-    cin >> t.actualScore;
+    if (!(cin >> t.actualScore)){
+        cout << "Invalid input. Please enter a number.\n";
+        cin.clear();
+        cin.ignore(1000, '\n');
+        return;
+    }
 
     cin.ignore();
 
     tasks.push_back(t);
 }
 
+//loop through tasks and display their details to the user
 void viewTasks(const vector<Task>& tasks){
     for (const Task& task : tasks){
         //print task data
@@ -53,7 +63,12 @@ int main(){
         cout << "2. View Tasks\n";
         cout << "3. Exit\n";
         int choice;
-        cin >> choice;
+        if(!(cin >> choice)){
+            cout << "Invalid input. Please enter a number.\n";
+            cin.clear();
+            cin.ignore(1000, '\n');
+            continue;
+        }
         cin.ignore();
 
         switch(choice){
