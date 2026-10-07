@@ -11,75 +11,40 @@ struct Task{
     double actualScore;
 };
 
+double getValidScore(const string prompt){
+    bool validScore = false;
+    double score;
+    while (!validScore){
+        cout << prompt;
+
+        if (cin >> score){
+            if (score >= 0 && score <= 1000){
+                validScore = true;
+            }
+            else{
+                cout << "Score must be between 0 and 1000.\n";
+            }
+        }
+        else{
+            cout << "Invalid input. Please enter a number.\n";
+            cin.clear();
+            cin.ignore(1000, '\n');
+        }
+    }
+    return score;
+}
+
 
 //create task
 void addTask(vector<Task>& tasks){
     Task t;
-    bool validScore = false;
-
     cout << "Enter task name: ";
     getline(cin, t.name);
 
-    //validate expected score input
-    while (!validScore){
-        cout << "Enter expected score: ";
-
-        if (cin >> t.expectedScore){
-            if (t.expectedScore >= 0 && t.expectedScore <= 1000){
-                validScore = true;
-            }
-            else{
-                cout << "Score must be between 0 and 1000.\n";
-            }
-        }
-        else{
-            cout << "Invalid input. Please enter a number.\n";
-            cin.clear();
-            cin.ignore(1000, '\n');
-        }
-    }
-
-    validScore = false;
-
-    while (!validScore){
-        cout << "Enter actual score: ";
-
-        if (cin >> t.actualScore){
-            if (t.actualScore >= 0 && t.actualScore <= 1000){
-                validScore = true;
-            }
-            else{
-                cout << "Score must be between 0 and 1000.\n";
-            }
-        }
-        else{
-            cout << "Invalid input. Please enter a number.\n";
-            cin.clear();
-            cin.ignore(1000, '\n');
-        }
-    }
-    /*
-    cout << "Enter expected score: ";
-    while (!(cin >> t.expectedScore)){
-        cout << "Invalid input. Please enter a number.\n";
-        cin.clear();
-        cin.ignore(1000, '\n');
-
-        cout << "Enter expected score: ";
-    }
-
-    cout<< "enter actual score: ";
-    while (!(cin >> t.actualScore)){
-        cout << "Invalid input. Please enter a number.\n";
-        cin.clear();
-        cin.ignore(1000, '\n');
-
-        cout << "Enter actual score: ";
-    }
-    */
-
-    cin.ignore();
-
+    t.expectedScore = getValidScore("Enter expected score: ");
+    t.actualScore = getValidScore("Enter actual score: ");
+    
+    cin.ignore(1000, '\n');
     tasks.push_back(t);
 }
 
@@ -105,7 +70,8 @@ int main(){
     while(active){
         cout << "1. Add Task\n";
         cout << "2. View Tasks\n";
-        cout << "3. Exit\n";
+        cout << "3. Edit Task\n";
+        cout << "4. Exit\n";
         int choice;
         if(!(cin >> choice)){
             cout << "Invalid input. Please enter a number.\n";
@@ -123,6 +89,10 @@ int main(){
                 viewTasks(tasks);
                 break;
             case 3:
+                // Edit Task functionality can be implemented here in the future
+                cout << "Edit Task feature is not implemented yet.\n";
+                break;
+            case 4:
                 active = false;
                 break;
             default:
