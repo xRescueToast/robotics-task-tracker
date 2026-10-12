@@ -2,13 +2,20 @@
 #include <vector>
 #include <string>
 #include <iomanip>
+#include <ctime>
+#include <sstream>
 
 using namespace std;
 
-struct Task{
-    string name;
+struct scoreRecord{
+    string date;
     double expectedScore;
     double actualScore;
+};
+
+struct Task{
+    string name;
+    vector<scoreRecord> scoreHistory;
 };
 
 double getValidScore(const string prompt){
@@ -34,15 +41,35 @@ double getValidScore(const string prompt){
     return score;
 }
 
+string getCurrentDate(){
+    time_t now = time(nullptr);
+
+    tm localTime;
+
+    if (localtime_s(&localTime, &now) != 0)
+    {
+        return "";
+    }
+
+    stringstream dateStream;
+    dateStream << put_time(&localTime, "%Y-%m-%d");
+
+    return dateStream.str();
+}
 
 //create task
 void addTask(vector<Task>& tasks){
     Task t;
+    scoreRecord sr;
     cout << "Enter task name: ";
     getline(cin, t.name);
 
-    t.expectedScore = getValidScore("Enter expected score: ");
-    t.actualScore = getValidScore("Enter actual score: ");
+    //read in expected and actual scores for the task
+    sr.expectedScore = getValidScore("Enter expected score: ");
+    sr.actualScore = getValidScore("Enter actual score: ");
+    sr.date = getCurrentDate();
+    //add the score record to the task's history
+    t.scoreHistory.push_back(sr);
     
     cin.ignore(1000, '\n');
     tasks.push_back(t);
@@ -50,17 +77,33 @@ void addTask(vector<Task>& tasks){
 
 //loop through tasks and display their details to the user
 void viewTasks(const vector<Task>& tasks){
+    int taskNumber = 1;
+    cout << "-----------------------------\n";
     for (const Task& task : tasks){
         //print task data
-        cout << "Task details:\n";
+        cout << "Task " << taskNumber << " details:\n";
         cout << "name: " << task.name << "\n";
-        cout << "expected score: " << task.expectedScore << "\n";
-        cout << "actual score: " << task.actualScore << "\n";
+        for (const scoreRecord& sr : task.scoreHistory){
+            //display the date of the score record
+            cout << "Date: " << sr.date << "\n";
+            //display the score record
+            cout << "Expected Score: " << sr.expectedScore << "\n";
+            cout << "Actual Score: " << sr.actualScore << "\n";
 
-        //calculate the guidance score for each referenced task
-        double guidanceScore = task.actualScore - task.expectedScore;
-        cout << "Guidance Score: " << guidanceScore << "\n";
+            double guidanceScore = sr.actualScore - sr.expectedScore;
+
+            cout << "Guidance Score: " << guidanceScore << "\n";
+        }
         cout << "-----------------------------\n";
+        taskNumber++;
+    }
+}
+
+//edit task information
+void editTask(vector<Task>& tasks){
+    if (tasks.empty()){
+        cout << "No tasks available to edit.\n";
+        return;
     }
 }
 
