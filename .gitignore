@@ -2,3 +2,4 @@
 *.obj
 *.exe
 builds/
+tracker.env
