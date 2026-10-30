@@ -38,6 +38,7 @@ double getValidScore(const string prompt){
             cin.ignore(1000, '\n');
         }
     }
+    cin.ignore(1000, '\n');
     return score;
 }
 
@@ -75,7 +76,6 @@ void addTask(vector<Task>& tasks){
     //read in expected and actual scores for the task
     //add the score record to the task's history
     t.scoreHistory.push_back(readScoreRecord());
-    cin.ignore(1000, '\n');
     tasks.push_back(t);
 }
 
@@ -105,12 +105,96 @@ void viewTasks(const vector<Task>& tasks){
     }
 }
 
+size_t selectTask(const vector<Task>& tasks){
+    for (size_t i = 0; i < tasks.size(); i++){
+        cout << i + 1 << ". " << tasks[i].name << "\n";
+    }
+
+    size_t taskNumber;
+    bool validIndex = false;
+    cout << "Enter the task number: ";
+    while(!validIndex){
+        if (cin >> taskNumber && taskNumber >= 1 && taskNumber <= tasks.size()){
+            validIndex = true;
+        }
+        else{
+            cout << "Invalid input. Please enter a valid task number.\n";
+            cin.clear();
+            cin.ignore(1000, '\n');
+        }
+    }
+    cin.ignore(1000, '\n');
+    return taskNumber - 1;
+}
+
+//helper function for edit task that handles changing the name of a task
+void editTaskName(Task& task){
+    cout << "Current name: " << task.name << "\n";
+    cout << "Enter new name: ";
+    getline(cin, task.name);
+}
+
+size_t selectScoreRecord(const Task& task){
+    //list the records belonging to the passed task
+    for (size_t i = 0; i < task.scoreHistory.size(); i++){
+        const scoreRecord& sr = task.scoreHistory[i];
+        cout << i + 1 << ". " << sr.date << " (expected: " << sr.expectedScore << ", actual: " << sr.actualScore << ")\n";
+    }
+
+    //prompt user to pick from the listed records
+    size_t recordNumber;
+    cout << "Enter the record number: ";
+    while(!(cin >> recordNumber) || recordNumber < 1 || recordNumber > task.scoreHistory.size()){
+        cout << "Invalid input. Please enter a valid record number.\n";
+        cin.clear();
+        cin.ignore(1000, '\n');
+    }
+    cin.ignore(1000, '\n');
+    return recordNumber - 1;
+}
+
+void editScoreRecord(Task& task){
+    size_t recordIndex = selectScoreRecord(task);
+    scoreRecord& sr = task.scoreHistory[recordIndex];
+
+    cout << "Current expected score: " << sr.expectedScore << "\n";
+    sr.expectedScore = getValidScore("Enter new expected score: ");
+    cout << "Current actual score: " << sr.actualScore << "\n";
+    sr.actualScore = getValidScore("Enter new actual score: ");
+}
+
 //edit task information
 void editTask(vector<Task>& tasks){
     if (tasks.empty()){
         cout << "No tasks available to edit.\n";
         return;
     }
+    else{
+        cout << "Select a task to edit:\n";
+        size_t taskIndex = selectTask(tasks);
+
+        //list options
+        cout << "1. Edit task name\n";
+        cout << "2. Edit task score record\n";
+        cout << "Enter choice: ";
+
+        //handle selection and validate input
+        int editChoice;
+        while(!(cin >> editChoice) || editChoice < 1 || editChoice > 2){
+            cout << "Invalid input, enter 1 or 2\n";
+            cin.clear();
+            cin.ignore(1000, '\n');
+        }
+        cin.ignore(1000, '\n');
+
+        if(editChoice == 1){
+            editTaskName(tasks[taskIndex]);
+        }
+        else{
+            editScoreRecord(tasks[taskIndex]);
+        }
+    }
+
 }
 
 //add score record to a task
@@ -122,24 +206,8 @@ void addScoreRecord(vector<Task>& tasks){
     else{
         //list scores to user along with their index number.
         cout << "Select a task to add a score record:\n";
-        for (size_t i = 0; i < tasks.size(); ++i){
-            cout << i + 1 << ". " << tasks[i].name << "\n";
-        }
-
-        size_t taskIndex;
-        bool validIndex = false;
-        cout << "Enter the task number: ";
-        while(!validIndex){
-            if (cin >> taskIndex && taskIndex >= 1 && taskIndex <= tasks.size()){
-                validIndex = true;
-            }
-            else{
-                cout << "Invalid input. Please enter a valid task number.\n";
-                cin.clear();
-                cin.ignore(1000, '\n');
-            }
-        }
-        tasks[taskIndex - 1].scoreHistory.push_back(readScoreRecord());
+        size_t taskIndex = selectTask(tasks);
+        tasks[taskIndex].scoreHistory.push_back(readScoreRecord());
     }
 }
 
@@ -150,7 +218,8 @@ int main(){
         cout << "1. Add Task\n";
         cout << "2. View Tasks\n";
         cout << "3. Add Score Record\n";
-        cout << "4. Exit\n";
+        cout << "4. Edit Task\n";
+        cout << "5. Exit\n";
         int choice;
         if(!(cin >> choice)){
             cout << "Invalid input. Please enter a number.\n";
@@ -158,7 +227,7 @@ int main(){
             cin.ignore(1000, '\n');
             continue;
         }
-        cin.ignore();
+        cin.ignore(1000, '\n');
 
         switch(choice){
             case 1:
@@ -171,6 +240,9 @@ int main(){
                 addScoreRecord(tasks);
                 break;
             case 4:
+                editTask(tasks);
+                break;
+            case 5:
                 active = false;
                 break;
             default:
