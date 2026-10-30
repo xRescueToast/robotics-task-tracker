@@ -1,0 +1,18 @@
+CREATE TABLE seasons (
+    id SERIAL PRIMARY KEY,
+    name TEXT NOT NULL UNIQUE
+);
+
+CREATE TABLE tasks (
+    id SERIAL PRIMARY KEY,
+    season_id INTEGER NOT NULL REFERENCES seasons(id) ON DELETE CASCADE,
+    name TEXT NOT NULL
+);
+
+CREATE TABLE score_records (
+    id SERIAL PRIMARY KEY,
+    task_id INTEGER NOT NULL REFERENCES tasks(id) ON DELETE CASCADE,
+    recorded_date DATE NOT NULL,
+    expected_score DOUBLE PRECISION NOT NULL,
+    actual_score DOUBLE PRECISION NOT NULL
+);
