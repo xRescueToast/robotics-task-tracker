@@ -188,15 +188,16 @@ void editTask(vector<Task>& tasks){
 }
 
 //add score record to a task
-void addScoreRecord(vector<Task>& tasks){
+int addScoreRecord(vector<Task>& tasks){
     if(tasks.empty()){
         cout << "No tasks available to add score records.\n";
-        return;
+        return -1;
     }
     else{
         //list scores to user along with their index number.
         cout << "Select a task to add a score record:\n";
         size_t taskIndex = selectTask(tasks);
         tasks[taskIndex].scoreHistory.push_back(readScoreRecord());
+        return int(taskIndex);
     }
 }

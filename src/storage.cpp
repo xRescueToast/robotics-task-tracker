@@ -101,3 +101,17 @@ int saveScoreRecord(const string& connStr, int taskId, const scoreRecord& record
     //give the caller the new score record's id
     return newId;
 }
+
+//save a new task and all of its score records, storing the new ids in the task
+void saveTaskWithScores(const string& connStr, Task& task) {
+    task.id = saveTask(connStr, task.name);
+    for (scoreRecord& sr : task.scoreHistory) {
+        sr.id = saveScoreRecord(connStr, task.id, sr);
+    }
+}
+
+//save the most recently added score record of a task and store its new id
+void saveLatestScoreRecord(const string& connStr, Task& task) {
+    scoreRecord& sr = task.scoreHistory.back();
+    sr.id = saveScoreRecord(connStr, task.id, sr);
+}

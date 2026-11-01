@@ -1,11 +1,14 @@
 #include <iostream>
 #include "task.h"
 #include "console_ui.h"
+#include "storage.h"
 
 using namespace std;
 
 int main(){
-    vector<Task> tasks;
+    string connStr = loadConnString("tracker.env");
+    vector<Task> tasks = loadTasks(connStr);
+    int taskIndex;
     bool active = true;
     while(active){
         cout << "1. Add Task\n";
@@ -25,12 +28,14 @@ int main(){
         switch(choice){
             case 1:
                 addTask(tasks);
+                saveTaskWithScores(connStr, tasks.back());
                 break;
             case 2:
                 viewTasks(tasks);
                 break;
             case 3:
-                addScoreRecord(tasks);
+                taskIndex = addScoreRecord(tasks);
+                if (taskIndex >= 0) saveLatestScoreRecord(connStr, tasks[taskIndex]);
                 break;
             case 4:
                 editTask(tasks);
