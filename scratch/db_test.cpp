@@ -1,21 +1,7 @@
-#include <pqxx/pqxx>
 #include <iostream>
-#include <fstream>
-#include <string>
+#include "storage.h"
 
 using namespace std;
-
-string loadConnString(const string& path) {
-    ifstream file(path);
-    string line;
-    const string key = "TRACKER_DB=";
-    while (getline(file, line)) {
-        if (line.rfind(key, 0) == 0) {
-            return line.substr(key.size());
-        }
-    }
-    return "";
-}
 
 int main() {
     string connStr = loadConnString("tracker.env");
@@ -25,10 +11,24 @@ int main() {
     }
 
     try {
-        pqxx::connection conn(connStr);
-        pqxx::work tx(conn);
-        int count = tx.query_value<int>("SELECT COUNT(*) FROM tasks");
-        cout << "Connected! tasks table has " << count << " rows\n";
+        int id = saveTask(connStr, "Test Task");
+        cout << "Saved task with id " << id << "\n";
+
+        scoreRecord r;
+        r.date = "2026-10-31";
+        r.expectedScore = 10;
+        r.actualScore = 8;
+        int scoreId = saveScoreRecord(connStr, id, r);
+        cout << "Saved score with id " << scoreId << "\n";
+
+        vector<Task> tasks = loadTasks(connStr);
+        for (const Task& t : tasks) {
+            cout << t.id << ": " << t.name << " (" << t.scoreHistory.size() << " scores)\n";
+            for (const scoreRecord& s : t.scoreHistory) {
+                cout << "\t" << s.date << " expected " << s.expectedScore
+                     << " actual " << s.actualScore << "\n";
+            }
+        }
     } catch (const exception& e) {
         cout << "Database error: " << e.what() << "\n";
         return 1;

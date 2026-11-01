@@ -56,3 +56,48 @@ vector<Task> loadTasks(const string& connStr) {
     }
     return tasks;
 }
+
+
+//inserts a new task into the database and return the id Postgres gives it
+int saveTask(const string& connStr, const string& name) {
+    //opens a connection and start a transaction
+    pqxx::connection conn(connStr);
+    pqxx::work tx(conn);
+
+    //temporary: find the first season, since every task must belong to one
+    int seasonId = tx.query_value<int>("SELECT id FROM seasons ORDER BY id LIMIT 1");
+
+    //insert the task. $1 and $2 are placeholders filled in by pqxx::params,
+    //the typed name is never pasted into the SQL (prevents SQL injection).
+    //RETURNING id makes Postgres send back the new row's id.
+    int newId = tx.query_value<int>(
+        "INSERT INTO tasks (season_id, name) VALUES ($1, $2) RETURNING id",
+        pqxx::params{seasonId, name});
+
+    //saves the changes; without commit the insert would be rolled back
+    tx.commit();
+
+    //give the caller the new task's database id
+    return newId;
+}
+
+//insert a score record for a task and return the id postgres gives it
+int saveScoreRecord(const string& connStr, int taskId, const scoreRecord& record) {
+    //open a connection and start a transaction
+    pqxx::connection conn(connStr);
+    pqxx::work tx(conn);
+
+    //run the INSERT with placeholders $1-$4, filled in order by pqxx::params
+    //taskId links the score to its task, and a bad id makes postgres throw an error
+    //RETURNING id sends back the id of the new row
+    int newId = tx.query_value<int>(
+        "INSERT INTO score_records (task_id, recorded_date, expected_score, actual_score) "
+        "VALUES ($1, $2, $3, $4) RETURNING id",
+        pqxx::params{taskId, record.date, record.expectedScore, record.actualScore});
+
+    //save the changes, without commit the insert is rolled back
+    tx.commit();
+
+    //give the caller the new score record's id
+    return newId;
+}

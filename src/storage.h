@@ -5,3 +5,5 @@
 
 std::string loadConnString(const std::string& path);
 std::vector<Task> loadTasks(const std::string& connStr);
+int saveTask(const std::string& connStr, const std::string& name);
+int saveScoreRecord(const std::string& connStr, int taskId, const scoreRecord& record);
