@@ -143,7 +143,7 @@ size_t selectScoreRecord(const Task& task){
     return recordNumber - 1;
 }
 
-void editScoreRecord(Task& task){
+int editScoreRecord(Task& task){
     size_t recordIndex = selectScoreRecord(task);
     scoreRecord& sr = task.scoreHistory[recordIndex];
 
@@ -151,40 +151,50 @@ void editScoreRecord(Task& task){
     sr.expectedScore = getValidScore("Enter new expected score: ");
     cout << "Current actual score: " << sr.actualScore << "\n";
     sr.actualScore = getValidScore("Enter new actual score: ");
+
+    return (int)recordIndex;
 }
 
 //edit task information
-void editTask(vector<Task>& tasks){
+editResult editTask(vector<Task>& tasks){
+    editResult result;
     if (tasks.empty()){
         cout << "No tasks available to edit.\n";
-        return;
+        return result;
+    }
+    cout << "Select a task to edit:\n";
+    size_t taskIndex = selectTask(tasks);
+
+    //list options
+    cout << "1. Edit task name\n";
+    cout << "2. Edit task score record\n";
+    cout << "Enter choice: ";
+
+    //handle selection and validate input
+    int editChoice;
+    while(!(cin >> editChoice) || editChoice < 1 || editChoice > 2){
+        cout << "Invalid input, enter 1 or 2\n";
+        cin.clear();
+        cin.ignore(1000, '\n');
+    }
+    cin.ignore(1000, '\n');
+
+    //apply the chosen edit and record only what was actually changed in the result
+    //a task with no score records leaves the result empty so nothing gets saved
+    if(editChoice == 1){
+        editTaskName(tasks[taskIndex]);
+        result.kind = EditKind::Name;
+        result.taskIndex = (int)taskIndex;
+    }
+    else if(tasks[taskIndex].scoreHistory.empty()){
+        cout << "This task has no score records to edit.\n";
     }
     else{
-        cout << "Select a task to edit:\n";
-        size_t taskIndex = selectTask(tasks);
-
-        //list options
-        cout << "1. Edit task name\n";
-        cout << "2. Edit task score record\n";
-        cout << "Enter choice: ";
-
-        //handle selection and validate input
-        int editChoice;
-        while(!(cin >> editChoice) || editChoice < 1 || editChoice > 2){
-            cout << "Invalid input, enter 1 or 2\n";
-            cin.clear();
-            cin.ignore(1000, '\n');
-        }
-        cin.ignore(1000, '\n');
-
-        if(editChoice == 1){
-            editTaskName(tasks[taskIndex]);
-        }
-        else{
-            editScoreRecord(tasks[taskIndex]);
-        }
-    }
-
+        result.recordIndex = editScoreRecord(tasks[taskIndex]);
+        result.taskIndex = (int)taskIndex;
+        result.kind = EditKind::Score;
+    } 
+    return result;
 }
 
 //add score record to a task

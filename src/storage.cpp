@@ -115,3 +115,35 @@ void saveLatestScoreRecord(const string& connStr, Task& task) {
     scoreRecord& sr = task.scoreHistory.back();
     sr.id = saveScoreRecord(connStr, task.id, sr);
 }
+
+//save the task's current name to its row in the database
+void updateTaskName(const string& connStr, const Task& task) {
+    pqxx::connection conn(connStr);
+    pqxx::work tx(conn);
+
+    tx.exec("UPDATE tasks SET name = $1 WHERE id = $2",
+            pqxx::params{task.name, task.id});
+
+    tx.commit();
+}
+
+//save the score record's current values to its row in the database
+void updateScoreRecord(const string& connStr, const scoreRecord& record) {
+    pqxx::connection conn(connStr);
+    pqxx::work tx(conn);
+
+    tx.exec("UPDATE score_records SET expected_score = $1, actual_score = $2 WHERE id = $3",
+            pqxx::params{record.expectedScore, record.actualScore, record.id});
+
+    tx.commit();
+}
+
+//save only what the edit changed, based on what editTask reported
+void saveEdit(const string& connStr, const vector<Task>& tasks, const editResult& result) {
+    if (result.kind == EditKind::Name) {
+        updateTaskName(connStr, tasks[result.taskIndex]);
+    }
+    else if (result.kind == EditKind::Score) {
+        updateScoreRecord(connStr, tasks[result.taskIndex].scoreHistory[result.recordIndex]);
+    }
+}

@@ -38,7 +38,7 @@ int main(){
                 if (taskIndex >= 0) saveLatestScoreRecord(connStr, tasks[taskIndex]);
                 break;
             case 4:
-                editTask(tasks);
+                saveEdit(connStr, tasks, editTask(tasks));
                 break;
             case 5:
                 active = false;
