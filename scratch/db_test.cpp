@@ -10,8 +10,11 @@ int main() {
         return 1;
     }
 
+    //the default season (id 1) is the one the test data goes into
+    int seasonId = 1;
+
     try {
-        int id = saveTask(connStr, "Test Task");
+        int id = saveTask(connStr, seasonId, "Test Task");
         cout << "Saved task with id " << id << "\n";
 
         scoreRecord r;
@@ -21,7 +24,7 @@ int main() {
         int scoreId = saveScoreRecord(connStr, id, r);
         cout << "Saved score with id " << scoreId << "\n";
 
-        vector<Task> tasks = loadTasks(connStr);
+        vector<Task> tasks = loadTasks(connStr, seasonId);
         for (const Task& t : tasks) {
             cout << t.id << ": " << t.name << " (" << t.scoreHistory.size() << " scores)\n";
             for (const scoreRecord& s : t.scoreHistory) {
