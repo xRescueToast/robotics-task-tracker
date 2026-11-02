@@ -5,6 +5,11 @@
 
 enum class EditKind {None, Name, Score};
 
+struct Season{
+    int id = 0;
+    std::string name;
+};
+
 struct editResult {
     int taskIndex = -1;
     EditKind kind = EditKind::None;

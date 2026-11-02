@@ -9,9 +9,10 @@ using namespace std;
 int main(){
     string connStr;
     vector<Task> tasks;
+    int seasonId = 1;
     try{
         connStr = loadConnString("tracker.env");
-        tasks = loadTasks(connStr);
+        tasks = loadTasks(connStr, seasonId);
     }
     catch(const exception& e){
         cout << "Could not start: " << e.what() << "\n";
@@ -40,7 +41,7 @@ int main(){
             switch(choice){
                 case 1:
                     addTask(tasks);
-                    saveTaskWithScores(connStr, tasks.back());
+                    saveTaskWithScores(connStr, seasonId, tasks.back());
                     break;
                 case 2:
                     viewTasks(tasks);
@@ -66,7 +67,7 @@ int main(){
         catch (const exception& e){
             cout << "Error: " << e.what() << "\n";
             try{
-                tasks = loadTasks(connStr);
+                tasks = loadTasks(connStr, seasonId);
             }
             catch (const exception&){
                 cout << "Could not refresh the list. Restart the app.\n";

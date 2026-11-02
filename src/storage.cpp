@@ -16,7 +16,7 @@ string loadConnString(const string& path) {
     return "";
 }
 
-vector<Task> loadTasks(const string& connStr) {
+vector<Task> loadTasks(const string& connStr, int seasonId) {
     vector<Task> tasks;
 
     //opens a connection to the server using the settings from tracker.env
@@ -26,7 +26,7 @@ vector<Task> loadTasks(const string& connStr) {
     pqxx::work tx(conn);
 
     //asks the database for the id and name of every task, oldest first
-    pqxx::result rows = tx.exec("SELECT id, name FROM tasks ORDER BY id");
+    pqxx::result rows = tx.exec("SELECT id, name FROM tasks WHERE season_id = $1 ORDER BY id", pqxx::params{seasonId});
 
     //iterate through the result one row at a time
     for (const auto& row : rows) {
@@ -59,13 +59,13 @@ vector<Task> loadTasks(const string& connStr) {
 
 
 //inserts a new task into the database and return the id Postgres gives it
-int saveTask(const string& connStr, const string& name) {
+int saveTask(const string& connStr, int seasonId, const string& name) {
     //opens a connection and start a transaction
     pqxx::connection conn(connStr);
     pqxx::work tx(conn);
 
     //temporary: find the first season, since every task must belong to one
-    int seasonId = tx.query_value<int>("SELECT id FROM seasons ORDER BY id LIMIT 1");
+    //int seasonId = tx.query_value<int>("SELECT id FROM seasons ORDER BY id LIMIT 1");
 
     //insert the task. $1 and $2 are placeholders filled in by pqxx::params,
     //the typed name is never pasted into the SQL (prevents SQL injection).
@@ -103,8 +103,8 @@ int saveScoreRecord(const string& connStr, int taskId, const scoreRecord& record
 }
 
 //save a new task and all of its score records, storing the new ids in the task
-void saveTaskWithScores(const string& connStr, Task& task) {
-    task.id = saveTask(connStr, task.name);
+void saveTaskWithScores(const std::string& connStr, int seasonId, Task& task) {
+    task.id = saveTask(connStr, seasonId, task.name);
     for (scoreRecord& sr : task.scoreHistory) {
         sr.id = saveScoreRecord(connStr, task.id, sr);
     }
@@ -162,4 +162,41 @@ void deleteTask(const string& connStr, int taskId) {
 void removeTask(const string& connStr, vector<Task>& tasks, int taskIndex) {
     deleteTask(connStr, tasks[taskIndex].id);
     tasks.erase(tasks.begin() + taskIndex);
+}
+
+//load every season from the database, oldest first
+vector<Season> loadSeasons(const string& connStr) {
+    pqxx::connection conn(connStr);
+    pqxx::work tx(conn);
+
+    vector<Season> seasons;
+    for (const auto& row : tx.exec("SELECT id, name FROM seasons ORDER BY id")) {
+        Season s;
+        s.id = row[0].as<int>();
+        s.name = row[1].as<string>();
+        seasons.push_back(s);
+    }
+
+    return seasons;
+}
+
+//insert a new season and return its database id
+int saveSeason(const string& connStr, const string& name) {
+    pqxx::connection conn(connStr);
+    pqxx::work tx(conn);
+
+    int id = tx.query_value<int>("INSERT INTO seasons (name) VALUES ($1) RETURNING id", pqxx::params{name});
+
+    tx.commit();
+    return id;
+}
+
+//delete one season from the database by its id
+void deleteSeason(const string& connStr, int seasonId) {
+    pqxx::connection conn(connStr);
+    pqxx::work tx(conn);
+
+    tx.exec("DELETE FROM seasons WHERE id = $1", pqxx::params{seasonId});
+
+    tx.commit();
 }
