@@ -12,3 +12,5 @@ void saveLatestScoreRecord(const std::string& connStr, Task& task);
 void updateTaskName(const std::string& connStr, const Task& task);
 void updateScoreRecord(const std::string& connStr, const scoreRecord& record);
 void saveEdit(const std::string& connStr, const std::vector<Task>& tasks, const editResult& result);
+void deleteTask(const std::string& connStr, int taskId);
+void removeTask(const std::string& connStr, std::vector<Task>& tasks, int taskIndex);

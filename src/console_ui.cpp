@@ -211,3 +211,30 @@ int addScoreRecord(vector<Task>& tasks){
         return int(taskIndex);
     }
 }
+
+//ask which task to delete and confirm it, returns the index or -1 if nothing should be deleted
+int selectTaskToDelete(const vector<Task>& tasks){
+    if (tasks.empty()){
+        cout << "No tasks available to delete.\n";
+        return -1;
+    }
+
+    cout << "Select a task to delete:\n";
+    size_t taskIndex = selectTask(tasks);
+
+    cout << "Delete \"" << tasks[taskIndex].name << "\" and all of its score records? (y/n): ";
+    char answer;
+    while (!(cin >> answer) || (answer != 'y' && answer != 'Y' && answer != 'n' && answer != 'N')){
+        cout << "Invalid input, enter y or n: ";
+        cin.clear();
+        cin.ignore(1000, '\n');
+    }
+    cin.ignore(1000, '\n');
+
+    if (answer == 'n' || answer == 'N'){
+        cout << "Delete cancelled.\n";
+        return -1;
+    }
+
+    return (int)taskIndex;
+}

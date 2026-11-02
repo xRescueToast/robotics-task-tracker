@@ -147,3 +147,19 @@ void saveEdit(const string& connStr, const vector<Task>& tasks, const editResult
         updateScoreRecord(connStr, tasks[result.taskIndex].scoreHistory[result.recordIndex]);
     }
 }
+
+//delete one task from the database by its id
+void deleteTask(const string& connStr, int taskId) {
+    pqxx::connection conn(connStr);
+    pqxx::work tx(conn);
+
+    tx.exec("DELETE FROM tasks WHERE id = $1", pqxx::params{taskId});
+
+    tx.commit();
+}
+
+//delete a task from the database, then remove it from the in-memory list so both match
+void removeTask(const string& connStr, vector<Task>& tasks, int taskIndex) {
+    deleteTask(connStr, tasks[taskIndex].id);
+    tasks.erase(tasks.begin() + taskIndex);
+}
