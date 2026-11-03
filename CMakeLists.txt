@@ -19,4 +19,18 @@ add_executable(RoboticsTaskTracker
     src/main.cpp
     src/console_ui.cpp
 )
+
 target_link_libraries(RoboticsTaskTracker PRIVATE tracker_core)
+
+add_executable(RoboticsTaskTrackerGui
+    src/gui/gui_main.cpp
+    src/gui/main_window.cpp
+    src/gui/main_window.h
+)
+
+target_link_libraries(RoboticsTaskTrackerGui PRIVATE tracker_core Qt6::Widgets)
+
+add_custom_command(TARGET RoboticsTaskTrackerGui POST_BUILD
+    COMMAND "${Qt6_DIR}/../../../bin/windeployqt.exe" --no-translations
+            "$<TARGET_FILE:RoboticsTaskTrackerGui>"
+)
