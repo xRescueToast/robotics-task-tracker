@@ -4,12 +4,16 @@
 #include "task.h"
 
 std::string loadConnString(const std::string& path);
-std::vector<Task> loadTasks(const std::string& connStr, int seasonId);
-int saveTask(const std::string& connStr, int seasonId, const std::string& name);
+std::vector<Mission> loadMissions(const std::string& connStr, int seasonId);
+void saveMission(const std::string& connStr, int seasonId, Mission& mission);
+void deleteMission(const std::string& connStr, int missionId);
+void removeMission(const std::string& connStr, std::vector<Mission>& missions, int missionIndex);
+int saveTask(const std::string& connStr, int missionId, const std::string& name, int points);
 int saveScoreRecord(const std::string& connStr, int taskId, const scoreRecord& record);
-void saveTaskWithScores(const std::string& connStr, int seasonId, Task& task);
+void saveTaskWithScores(const std::string& connStr, int missionId, Task& task);
 void saveLatestScoreRecord(const std::string& connStr, Task& task);
 void updateTaskName(const std::string& connStr, const Task& task);
+void updateTaskPoints(const std::string& connStr, const Task& task);
 void updateScoreRecord(const std::string& connStr, const scoreRecord& record);
 void saveEdit(const std::string& connStr, const std::vector<Task>& tasks, const editResult& result);
 void deleteTask(const std::string& connStr, int taskId);

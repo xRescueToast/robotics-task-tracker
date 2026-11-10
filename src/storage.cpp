@@ -16,63 +16,106 @@ string loadConnString(const string& path) {
     return "";
 }
 
-vector<Task> loadTasks(const string& connStr, int seasonId) {
+//load every score record for one task, oldest first
+static vector<scoreRecord> loadScoreRecords(pqxx::work& tx, int taskId) {
+    vector<scoreRecord> records;
+
+    pqxx::result rows = tx.exec(
+        "SELECT id, recorded_date, attempts, successes "
+        "FROM score_records WHERE task_id = $1 ORDER BY recorded_date, id",
+        pqxx::params{taskId});
+
+    for (const auto& row : rows) {
+        scoreRecord sr;
+        sr.id = row["id"].as<int>();
+        sr.date = row["recorded_date"].as<string>();
+        sr.attempts = row["attempts"].as<int>();
+        sr.successes = row["successes"].as<int>();
+        records.push_back(sr);
+    }
+    return records;
+}
+
+//load every task for one mission, with each task's score records
+static vector<Task> loadTasksForMission(pqxx::work& tx, int missionId) {
     vector<Task> tasks;
 
-    //opens a connection to the server using the settings from tracker.env
-    pqxx::connection conn(connStr);
+    pqxx::result rows = tx.exec(
+        "SELECT id, name, points FROM tasks WHERE mission_id = $1 ORDER BY id",
+        pqxx::params{missionId});
 
-    //start a transaction -> libpqxx needs one to run a query
-    pqxx::work tx(conn);
-
-    //asks the database for the id and name of every task, oldest first
-    pqxx::result rows = tx.exec("SELECT id, name FROM tasks WHERE season_id = $1 ORDER BY id", pqxx::params{seasonId});
-
-    //iterate through the result one row at a time
     for (const auto& row : rows) {
         Task t;
-
-        //copy the database's id and name for this row into the task struct
         t.id = row["id"].as<int>();
         t.name = row["name"].as<string>();
-
-        //load the task's score records
-        pqxx::result scoreRows = tx.exec(
-            "SELECT id, recorded_date, expected_score, actual_score "
-            "FROM score_records WHERE task_id = " + pqxx::to_string(t.id) +
-            " ORDER BY id");
-
-        for (const auto& s : scoreRows) {
-            scoreRecord sr;
-            sr.id = s["id"].as<int>();
-            sr.date = s["recorded_date"].as<string>();
-            sr.expectedScore = s["expected_score"].as<double>();
-            sr.actualScore = s["actual_score"].as<double>();
-            t.scoreHistory.push_back(sr);
-        }
-
-        //add the finished task to the list
+        t.points = row["points"].as<int>();
+        t.scoreHistory = loadScoreRecords(tx, t.id);
         tasks.push_back(t);
     }
     return tasks;
 }
 
+//load every mission in a season, with their tasks and score records
+vector<Mission> loadMissions(const string& connStr, int seasonId) {
+    vector<Mission> missions;
 
-//inserts a new task into the database and return the id Postgres gives it
-int saveTask(const string& connStr, int seasonId, const string& name) {
+    pqxx::connection conn(connStr);
+    pqxx::work tx(conn);
+
+    pqxx::result rows = tx.exec(
+        "SELECT id, name FROM missions WHERE season_id = $1 ORDER BY name",
+        pqxx::params{seasonId});
+
+    for (const auto& row : rows) {
+        Mission m;
+        m.id = row["id"].as<int>();
+        m.name = row["name"].as<string>();
+        m.tasks = loadTasksForMission(tx, m.id);
+        missions.push_back(m);
+    }
+    return missions;
+}
+
+//insert a new mission into a season and store the id postgres gives it
+void saveMission(const string& connStr, int seasonId, Mission& mission) {
+    pqxx::connection conn(connStr);
+    pqxx::work tx(conn);
+
+    mission.id = tx.query_value<int>(
+        "INSERT INTO missions (season_id, name) VALUES ($1, $2) RETURNING id",
+        pqxx::params{seasonId, mission.name});
+
+    tx.commit();
+}
+
+//delete one mission by its id, ON DELETE CASCADE removes its tasks and score records
+void deleteMission(const string& connStr, int missionId) {
+    pqxx::connection conn(connStr);
+    pqxx::work tx(conn);
+
+    tx.exec("DELETE FROM missions WHERE id = $1", pqxx::params{missionId});
+
+    tx.commit();
+}
+
+//delete a mission from the database, then remove it from the in-memory list so both match
+void removeMission(const string& connStr, vector<Mission>& missions, int missionIndex) {
+    deleteMission(connStr, missions[missionIndex].id);
+    missions.erase(missions.begin() + missionIndex);
+}
+
+//inserts a new task into a mission and return the id Postgres gives it
+int saveTask(const string& connStr, int missionId, const string& name, int points) {
     //opens a connection and start a transaction
     pqxx::connection conn(connStr);
     pqxx::work tx(conn);
 
-    //temporary: find the first season, since every task must belong to one
-    //int seasonId = tx.query_value<int>("SELECT id FROM seasons ORDER BY id LIMIT 1");
-
-    //insert the task. $1 and $2 are placeholders filled in by pqxx::params,
+    //insert the task. $1-$3 are placeholders filled in by pqxx::params,
     //the typed name is never pasted into the SQL (prevents SQL injection).
     //RETURNING id makes Postgres send back the new row's id.
     int newId = tx.query_value<int>(
-        "INSERT INTO tasks (season_id, name) VALUES ($1, $2) RETURNING id",
-        pqxx::params{seasonId, name});
+        "INSERT INTO tasks (mission_id, name, points) VALUES ($1, $2, $3) RETURNING id",
+        pqxx::params{missionId, name, points});
 
     //saves the changes; without commit the insert would be rolled back
     tx.commit();
@@ -91,9 +134,9 @@ int saveScoreRecord(const string& connStr, int taskId, const scoreRecord& record
     //taskId links the score to its task, and a bad id makes postgres throw an error
     //RETURNING id sends back the id of the new row
     int newId = tx.query_value<int>(
-        "INSERT INTO score_records (task_id, recorded_date, expected_score, actual_score) "
+        "INSERT INTO score_records (task_id, recorded_date, attempts, successes) "
         "VALUES ($1, $2, $3, $4) RETURNING id",
-        pqxx::params{taskId, record.date, record.expectedScore, record.actualScore});
+        pqxx::params{taskId, record.date, record.attempts, record.successes});
 
     //save the changes, without commit the insert is rolled back
     tx.commit();
@@ -103,8 +146,8 @@ int saveScoreRecord(const string& connStr, int taskId, const scoreRecord& record
 }
 
 //save a new task and all of its score records, storing the new ids in the task
-void saveTaskWithScores(const std::string& connStr, int seasonId, Task& task) {
-    task.id = saveTask(connStr, seasonId, task.name);
+void saveTaskWithScores(const std::string& connStr, int missionId, Task& task) {
+    task.id = saveTask(connStr, missionId, task.name, task.points);
     for (scoreRecord& sr : task.scoreHistory) {
         sr.id = saveScoreRecord(connStr, task.id, sr);
     }
@@ -127,13 +170,24 @@ void updateTaskName(const string& connStr, const Task& task) {
     tx.commit();
 }
 
+//save the task's current possible points to its row in the database
+void updateTaskPoints(const string& connStr, const Task& task) {
+    pqxx::connection conn(connStr);
+    pqxx::work tx(conn);
+
+    tx.exec("UPDATE tasks SET points = $1 WHERE id = $2",
+            pqxx::params{task.points, task.id});
+
+    tx.commit();
+}
+
 //save the score record's current values to its row in the database
 void updateScoreRecord(const string& connStr, const scoreRecord& record) {
     pqxx::connection conn(connStr);
     pqxx::work tx(conn);
 
-    tx.exec("UPDATE score_records SET expected_score = $1, actual_score = $2 WHERE id = $3",
-            pqxx::params{record.expectedScore, record.actualScore, record.id});
+    tx.exec("UPDATE score_records SET recorded_date = $1, attempts = $2, successes = $3 WHERE id = $4",
+            pqxx::params{record.date, record.attempts, record.successes, record.id});
 
     tx.commit();
 }
@@ -142,6 +196,9 @@ void updateScoreRecord(const string& connStr, const scoreRecord& record) {
 void saveEdit(const string& connStr, const vector<Task>& tasks, const editResult& result) {
     if (result.kind == EditKind::Name) {
         updateTaskName(connStr, tasks[result.taskIndex]);
+    }
+    else if (result.kind == EditKind::Points) {
+        updateTaskPoints(connStr, tasks[result.taskIndex]);
     }
     else if (result.kind == EditKind::Score) {
         updateScoreRecord(connStr, tasks[result.taskIndex].scoreHistory[result.recordIndex]);
