@@ -28,6 +28,8 @@ add_executable(RoboticsTaskTrackerGui
     src/gui/main_window.h
 )
 
+set_target_properties(RoboticsTaskTrackerGui PROPERTIES WIN32_EXECUTABLE ON)
+
 target_link_libraries(RoboticsTaskTrackerGui PRIVATE tracker_core Qt6::Widgets)
 
 add_custom_command(TARGET RoboticsTaskTrackerGui POST_BUILD

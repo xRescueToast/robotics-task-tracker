@@ -1,5 +1,5 @@
 #pragma once
-#include <QListWidget>
+#include <QTreeWidget>
 #include <QMainWindow>
 #include <QSplitter>
 #include <QTableWidget>
@@ -15,8 +15,9 @@ public:
 
 private:
     void loadTaskList();
+    void onTreeItemClicked(QTreeWidgetItem* item, int column);
 
-    QListWidget* m_taskList = nullptr;
+    QTreeWidget* m_taskTree = nullptr;
     QSplitter* m_splitter = nullptr;
     QTableWidget* m_scoreTable = nullptr;
     std::string m_connStr;
