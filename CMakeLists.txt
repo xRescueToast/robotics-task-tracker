@@ -26,6 +26,8 @@ add_executable(RoboticsTaskTrackerGui
     src/gui/gui_main.cpp
     src/gui/main_window.cpp
     src/gui/main_window.h
+    src/gui/add_task_page.cpp
+    src/gui/add_task_page.h
 )
 
 set_target_properties(RoboticsTaskTrackerGui PROPERTIES WIN32_EXECUTABLE ON)

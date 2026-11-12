@@ -2,7 +2,6 @@
 #include <QColor>
 #include <QHeaderView>
 #include <QMessageBox>
-#include <QInputDialog>
 #include <exception>
 #include "storage.h"
 
@@ -25,13 +24,21 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent) {
     //call onTreeItemClicked whenever a row in the tree is clicked
     connect(m_taskTree, &QTreeWidget::itemClicked, this, &MainWindow::onTreeItemClicked);
 
-    //right panel: score records table starts with 0 rows and 4 columns
-    m_scoreTable = new QTableWidget(0, 4, m_splitter);
+    //stack on the right side, shows one page at a time
+    m_rightStack = new QStackedWidget(m_splitter);
+    m_scoreTable = new QTableWidget(0, 4);
     m_scoreTable->setHorizontalHeaderLabels({"Date", "Successes", "Reliability", "Expected"});
     //read only, edits will go through forms so storage saves exactly what changed
     m_scoreTable->setEditTriggers(QAbstractItemView::NoEditTriggers);
     //last column fills the leftover width so there is no empty strip
     m_scoreTable->horizontalHeader()->setStretchLastSection(true);
+
+    //add task form, page 1 of the stack
+    m_addTaskPage = new AddTaskPage;
+    m_rightStack->addWidget(m_scoreTable);
+    m_rightStack->addWidget(m_addTaskPage);
+    connect(m_addTaskPage, &AddTaskPage::saveRequested, this, &MainWindow::onAddTaskSaved);
+    connect(m_addTaskPage, &AddTaskPage::cancelled, this, [this]() { m_rightStack->setCurrentIndex(0); });
 
     //right panel (index 1) gets the extra space when the window is resized
     m_splitter->setStretchFactor(1, 1);
@@ -81,27 +88,28 @@ void MainWindow::onTreeItemClicked(QTreeWidgetItem* item, int column) {
         return;
     }
     int missionIndex = data.toInt();
-    const Mission& mission = m_missions[missionIndex];
+    //remember the mission and show the form
+    m_addTaskMission = missionIndex;
+    m_addTaskPage->reset();
+    m_rightStack->setCurrentIndex(1);
+}
 
-    //ask for the task name ok is false if the user pressed cancel
-    bool ok = false;
-    QString name = QInputDialog::getText(this, "Add task", "Task name:", QLineEdit::Normal, "", &ok);
-    if (!ok || name.trimmed().isEmpty()) {
+void MainWindow::onAddTaskSaved(const QString& name, int points) {
+    //guard against a bad mission index
+    if (m_addTaskMission < 0 || m_addTaskMission >= static_cast<int>(m_missions.size())) {
         return;
     }
-    //ask for max points: start 0, min 0, max 1000, step 1
-    int points = QInputDialog::getInt(this, "Add task", "Max points:", 0, 0, 1000, 1, &ok);
-    if (!ok) {
-        return;
-    }
+    const Mission& mission = m_missions[m_addTaskMission];
 
-    //sql storage
+    //save to the database
     try {
-        saveTask(m_connStr, mission.id, name.trimmed().toStdString(), points);
+        saveTask(m_connStr, mission.id, name.toStdString(), points);
     } catch (const std::exception& e) {
-        QMessageBox::critical(this, "Save error", e.what());
+        QMessageBox::warning(this, "Save error", e.what());
         return;
     }
-    //reload so the new task shows up with its real database id
+
+    //refresh the tree and go back to the table
     loadTaskList();
+    m_rightStack->setCurrentIndex(0);
 }
