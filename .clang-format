@@ -1,0 +1,26 @@
+BasedOnStyle: LLVM
+IndentWidth: 4
+TabWidth: 4
+UseTab: Never
+ColumnLimit: 120
+BreakBeforeBraces: Attach
+SpaceBeforeParens: ControlStatements
+PointerAlignment: Left
+ReferenceAlignment: Left
+DerivePointerAlignment: false
+AccessModifierOffset: -4
+IndentCaseLabels: true
+AllowShortFunctionsOnASingleLine: Empty
+AllowShortIfStatementsOnASingleLine: Never
+AllowShortLoopsOnASingleLine: false
+AllowShortBlocksOnASingleLine: Empty
+BreakConstructorInitializers: BeforeColon
+SpacesBeforeTrailingComments: 1
+#keep //comments without a space after the slashes
+SpacesInLineCommentPrefix:
+  Minimum: 0
+  Maximum: -1
+SortIncludes: false
+IncludeBlocks: Preserve
+InsertNewlineAtEOF: true
+LineEnding: CRLF

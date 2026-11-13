@@ -14,7 +14,8 @@ CREATE TABLE tasks (
     id SERIAL PRIMARY KEY,
     mission_id INTEGER NOT NULL REFERENCES missions(id) ON DELETE CASCADE,
     name TEXT NOT NULL,
-    points INTEGER NOT NULL DEFAULT 0 CHECK (points >= 0)
+    points INTEGER NOT NULL DEFAULT 0 CHECK (points >= 0),
+    CONSTRAINT tasks_points_range CHECK (points BETWEEN 0 AND 1000)
 );
 
 CREATE TABLE score_records (
@@ -23,5 +24,6 @@ CREATE TABLE score_records (
     recorded_date DATE NOT NULL,
     attempts INTEGER NOT NULL CHECK (attempts >= 0),
     successes INTEGER NOT NULL CHECK (successes >= 0),
-    CHECK (successes <= attempts)
+    CHECK (successes <= attempts),
+    CONSTRAINT score_records_attempts_range CHECK (attempts BETWEEN 1 AND 100)
 );

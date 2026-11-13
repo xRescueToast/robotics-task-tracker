@@ -7,6 +7,10 @@ set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 
 find_package(libpqxx CONFIG REQUIRED)
+#tx.exec(query, pqxx::params) needs libpqxx 7.10 or newer
+if(libpqxx_VERSION VERSION_LESS 7.10)
+    message(FATAL_ERROR "libpqxx 7.10 or newer is required, found ${libpqxx_VERSION}")
+endif()
 find_package(Qt6 REQUIRED COMPONENTS Widgets)
 
 add_library(tracker_core STATIC
@@ -14,7 +18,7 @@ add_library(tracker_core STATIC
 )
 
 target_include_directories(tracker_core PUBLIC src)
-target_link_libraries(tracker_core PUBLIC libpqxx::pqxx)
+target_link_libraries(tracker_core PRIVATE libpqxx::pqxx)
 
 add_executable(RoboticsTaskTracker
     src/main.cpp
