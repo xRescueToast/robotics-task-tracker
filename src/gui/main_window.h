@@ -1,15 +1,16 @@
 #pragma once
-#include <QTreeWidget>
+
 #include <QMainWindow>
-#include <QSplitter>
-#include <QTableWidget>
-#include <QStackedWidget>
 #include <QPushButton>
+#include <QSplitter>
+#include <QStackedWidget>
+#include <QTableWidget>
+#include <QTreeWidget>
 #include <string>
 #include <vector>
 #include "add_mission_page.h"
-#include "task.h"
 #include "add_task_page.h"
+#include "task.h"
 
 class MainWindow : public QMainWindow {
     Q_OBJECT
@@ -23,15 +24,17 @@ private:
     void onAddTaskSaved(const QString& name, int points);
     void onAddMissionSaved(const QString& name);
 
-    QTreeWidget* m_taskTree = nullptr;
-    QSplitter* m_splitter = nullptr;
-    QTableWidget* m_scoreTable = nullptr;
     std::string m_connStr;
     int m_seasonId = 1;
     std::vector<Mission> m_missions;
-    QStackedWidget* m_rightStack = nullptr;
-    AddTaskPage* m_addTaskPage = nullptr;
     int m_addTaskMission = -1;
-    AddMissionPage* m_addMissionPage = nullptr;
+
+    QSplitter* m_splitter = nullptr;
+    QTreeWidget* m_taskTree = nullptr;
     QPushButton* m_addMissionButton = nullptr;
+
+    QStackedWidget* m_rightStack = nullptr;
+    QTableWidget* m_scoreTable = nullptr;
+    AddTaskPage* m_addTaskPage = nullptr;
+    AddMissionPage* m_addMissionPage = nullptr;
 };

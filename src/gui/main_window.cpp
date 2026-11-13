@@ -1,3 +1,5 @@
+#include "main_window.h"
+
 #include <QColor>
 #include <QFrame>
 #include <QHeaderView>
@@ -7,7 +9,6 @@
 #include "storage.h"
 #include "tree_item_delegate.h"
 #include "tree_roles.h"
-#include "main_window.h"
 
 //color for action rows like + Add task
 static const QColor kActionColor(140, 140, 140);
@@ -29,20 +30,19 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent) {
     auto* sidebarLayout = new QVBoxLayout(sidebar);
     //small gap so the button sits inside the panel
     sidebarLayout->setContentsMargins(4, 4, 4, 4);
+
     m_taskTree = new QTreeWidget;
     //no frame on the tree, the sidebar draws the border
     m_taskTree->setFrameShape(QFrame::NoFrame);
-    m_addMissionButton = new QPushButton("+ Add mission");
-    sidebarLayout->addWidget(m_taskTree);
-    sidebarLayout->addWidget(m_addMissionButton);
     m_taskTree->setHeaderHidden(true);
 
     //hover icons for edit and delete
     m_taskTree->setMouseTracking(true);
     m_taskTree->setItemDelegate(new TreeItemDelegate(m_taskTree));
-    
-    //call onTreeItemClicked whenever a row in the tree is clicked
-    connect(m_taskTree, &QTreeWidget::itemClicked, this, &MainWindow::onTreeItemClicked);
+
+    m_addMissionButton = new QPushButton("+ Add mission");
+    sidebarLayout->addWidget(m_taskTree);
+    sidebarLayout->addWidget(m_addMissionButton);
 
     //stack on the right side, shows one page at a time
     m_rightStack = new QStackedWidget(m_splitter);
@@ -52,15 +52,22 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent) {
     m_scoreTable->setEditTriggers(QAbstractItemView::NoEditTriggers);
     //last column fills the leftover width so there is no empty strip
     m_scoreTable->horizontalHeader()->setStretchLastSection(true);
+    m_rightStack->addWidget(m_scoreTable);
 
     //add task form, page 1 of the stack
     m_addTaskPage = new AddTaskPage;
-    m_rightStack->addWidget(m_scoreTable);
     m_rightStack->addWidget(m_addTaskPage);
 
     //add mission form page 2 of the stack
     m_addMissionPage = new AddMissionPage;
     m_rightStack->addWidget(m_addMissionPage);
+
+    //call onTreeItemClicked whenever a row in the tree is clicked
+    connect(m_taskTree, &QTreeWidget::itemClicked, this, &MainWindow::onTreeItemClicked);
+
+    connect(m_addTaskPage, &AddTaskPage::saveRequested, this, &MainWindow::onAddTaskSaved);
+    connect(m_addTaskPage, &AddTaskPage::cancelled, this, [this]() { m_rightStack->setCurrentIndex(0); });
+
     connect(m_addMissionPage, &AddMissionPage::saveRequested, this, &MainWindow::onAddMissionSaved);
     connect(m_addMissionPage, &AddMissionPage::cancelled, this, [this]() { m_rightStack->setCurrentIndex(0); });
 
@@ -70,16 +77,12 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent) {
         m_rightStack->setCurrentIndex(2);
     });
 
-    connect(m_addTaskPage, &AddTaskPage::saveRequested, this, &MainWindow::onAddTaskSaved);
-    connect(m_addTaskPage, &AddTaskPage::cancelled, this, [this]() { m_rightStack->setCurrentIndex(0); });
-
     //right panel (index 1) gets the extra space when the window is resized
     m_splitter->setStretchFactor(1, 1);
     //splitter fills the main window
     setCentralWidget(m_splitter);
     loadTaskList();
 }
-
 //loads missions and tasks from the database and rebuilds the tree
 void MainWindow::loadTaskList() {
     //storage throws on connection or query errors shows them in a popup
@@ -149,7 +152,6 @@ void MainWindow::onAddTaskSaved(const QString& name, int points) {
     loadTaskList();
     m_rightStack->setCurrentIndex(0);
 }
-
 
 void MainWindow::onAddMissionSaved(const QString& name) {
     //build the mission and save it
