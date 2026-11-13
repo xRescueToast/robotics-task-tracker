@@ -1,9 +1,13 @@
-#include "main_window.h"
 #include <QColor>
+#include <QFrame>
 #include <QHeaderView>
 #include <QMessageBox>
+#include <QVBoxLayout>
 #include <exception>
 #include "storage.h"
+#include "tree_item_delegate.h"
+#include "tree_roles.h"
+#include "main_window.h"
 
 //color for action rows like + Add task
 static const QColor kActionColor(140, 140, 140);
@@ -13,14 +17,30 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent) {
     setWindowTitle("Robotics Task Tracker");
     resize(900, 600);
 
-
-    //TEMPORARY
     //splitter holds the left and right panels side by side with a draggable divider
     m_splitter = new QSplitter(Qt::Horizontal, this);
 
-    //left panel: mission and task tree
-    m_taskTree = new QTreeWidget(m_splitter);
+    //sidebar panel: tree and button share one frame and background
+    auto* sidebar = new QFrame(m_splitter);
+    sidebar->setFrameShape(QFrame::StyledPanel);
+    //paint the sidebar the same color as the tree so it reads as one box
+    sidebar->setBackgroundRole(QPalette::Base);
+    sidebar->setAutoFillBackground(true);
+    auto* sidebarLayout = new QVBoxLayout(sidebar);
+    //small gap so the button sits inside the panel
+    sidebarLayout->setContentsMargins(4, 4, 4, 4);
+    m_taskTree = new QTreeWidget;
+    //no frame on the tree, the sidebar draws the border
+    m_taskTree->setFrameShape(QFrame::NoFrame);
+    m_addMissionButton = new QPushButton("+ Add mission");
+    sidebarLayout->addWidget(m_taskTree);
+    sidebarLayout->addWidget(m_addMissionButton);
     m_taskTree->setHeaderHidden(true);
+
+    //hover icons for edit and delete
+    m_taskTree->setMouseTracking(true);
+    m_taskTree->setItemDelegate(new TreeItemDelegate(m_taskTree));
+    
     //call onTreeItemClicked whenever a row in the tree is clicked
     connect(m_taskTree, &QTreeWidget::itemClicked, this, &MainWindow::onTreeItemClicked);
 
@@ -37,6 +57,19 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent) {
     m_addTaskPage = new AddTaskPage;
     m_rightStack->addWidget(m_scoreTable);
     m_rightStack->addWidget(m_addTaskPage);
+
+    //add mission form page 2 of the stack
+    m_addMissionPage = new AddMissionPage;
+    m_rightStack->addWidget(m_addMissionPage);
+    connect(m_addMissionPage, &AddMissionPage::saveRequested, this, &MainWindow::onAddMissionSaved);
+    connect(m_addMissionPage, &AddMissionPage::cancelled, this, [this]() { m_rightStack->setCurrentIndex(0); });
+
+    //add mission button opens the form
+    connect(m_addMissionButton, &QPushButton::clicked, this, [this]() {
+        m_addMissionPage->reset();
+        m_rightStack->setCurrentIndex(2);
+    });
+
     connect(m_addTaskPage, &AddTaskPage::saveRequested, this, &MainWindow::onAddTaskSaved);
     connect(m_addTaskPage, &AddTaskPage::cancelled, this, [this]() { m_rightStack->setCurrentIndex(0); });
 
@@ -64,30 +97,33 @@ void MainWindow::loadTaskList() {
         //top level row for the mission created before the task loop so empty missions still show
         auto* missionItem = new QTreeWidgetItem(m_taskTree);
         missionItem->setText(0, QString::fromStdString(mission.name));
+        missionItem->setData(0, kKindRole, static_cast<int>(TreeRowKind::Mission));
         //child rows for each task indented under the mission
         for (const Task& task : mission.tasks) {
             auto* taskItem = new QTreeWidgetItem(missionItem);
             taskItem->setText(0, QString::fromStdString(task.name));
+            taskItem->setData(0, kKindRole, static_cast<int>(TreeRowKind::Task));
         }
         //open the mission so its tasks are visible right away
         missionItem->setExpanded(true);
         //last child row is the gray + Add task action
         auto* addItem = new QTreeWidgetItem(missionItem);
         addItem->setText(0, "+ Add task");
-        //hidden data: the mission's index in m_missions reads back when the row is clicked
-        addItem->setData(0, Qt::UserRole, static_cast<int>(&mission - m_missions.data()));
+        //hidden data: the row kind and the mission's index in m_missions, read back when the row is clicked
+        addItem->setData(0, kKindRole, static_cast<int>(TreeRowKind::AddTask));
+        addItem->setData(0, kMissionIndexRole, static_cast<int>(&mission - m_missions.data()));
         addItem->setForeground(0, kActionColor);
     }
 }
 
 //runs when any tree row is clicked
 void MainWindow::onTreeItemClicked(QTreeWidgetItem* item, int column) {
-    //only + Add task rows have hidden data, so mission and task rows return early
-    QVariant data = item->data(0, Qt::UserRole);
-    if (!data.isValid()) {
+    //only + Add task rows open the form, mission and task rows return early for now
+    auto kind = static_cast<TreeRowKind>(item->data(0, kKindRole).toInt());
+    if (kind != TreeRowKind::AddTask) {
         return;
     }
-    int missionIndex = data.toInt();
+    int missionIndex = item->data(0, kMissionIndexRole).toInt();
     //remember the mission and show the form
     m_addTaskMission = missionIndex;
     m_addTaskPage->reset();
@@ -104,6 +140,23 @@ void MainWindow::onAddTaskSaved(const QString& name, int points) {
     //save to the database
     try {
         saveTask(m_connStr, mission.id, name.toStdString(), points);
+    } catch (const std::exception& e) {
+        QMessageBox::warning(this, "Save error", e.what());
+        return;
+    }
+
+    //refresh the tree and go back to the table
+    loadTaskList();
+    m_rightStack->setCurrentIndex(0);
+}
+
+
+void MainWindow::onAddMissionSaved(const QString& name) {
+    //build the mission and save it
+    Mission mission;
+    mission.name = name.toStdString();
+    try {
+        saveMission(m_connStr, m_seasonId, mission);
     } catch (const std::exception& e) {
         QMessageBox::warning(this, "Save error", e.what());
         return;

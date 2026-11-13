@@ -63,7 +63,7 @@ vector<Mission> loadMissions(const string& connStr, int seasonId) {
     pqxx::work tx(conn);
 
     pqxx::result rows = tx.exec(
-        "SELECT id, name FROM missions WHERE season_id = $1 ORDER BY name",
+        "SELECT id, name FROM missions WHERE season_id = $1 ORDER BY id",
         pqxx::params{seasonId});
 
     for (const auto& row : rows) {
