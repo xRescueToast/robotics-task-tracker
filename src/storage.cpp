@@ -17,8 +17,8 @@ string loadConnString(const string& path) {
 }
 
 //load every score record for one task, oldest first
-static vector<scoreRecord> loadScoreRecords(pqxx::work& tx, int taskId) {
-    vector<scoreRecord> records;
+static vector<ScoreRecord> loadScoreRecords(pqxx::work& tx, int taskId) {
+    vector<ScoreRecord> records;
 
     pqxx::result rows = tx.exec(
         "SELECT id, recorded_date, attempts, successes "
@@ -26,7 +26,7 @@ static vector<scoreRecord> loadScoreRecords(pqxx::work& tx, int taskId) {
         pqxx::params{taskId});
 
     for (const auto& row : rows) {
-        scoreRecord sr;
+        ScoreRecord sr;
         sr.id = row["id"].as<int>();
         sr.date = row["recorded_date"].as<string>();
         sr.attempts = row["attempts"].as<int>();
@@ -125,7 +125,7 @@ int saveTask(const string& connStr, int missionId, const string& name, int point
 }
 
 //insert a score record for a task and return the id postgres gives it
-int saveScoreRecord(const string& connStr, int taskId, const scoreRecord& record) {
+int saveScoreRecord(const string& connStr, int taskId, const ScoreRecord& record) {
     //open a connection and start a transaction
     pqxx::connection conn(connStr);
     pqxx::work tx(conn);
@@ -148,14 +148,14 @@ int saveScoreRecord(const string& connStr, int taskId, const scoreRecord& record
 //save a new task and all of its score records, storing the new ids in the task
 void saveTaskWithScores(const std::string& connStr, int missionId, Task& task) {
     task.id = saveTask(connStr, missionId, task.name, task.points);
-    for (scoreRecord& sr : task.scoreHistory) {
+    for (ScoreRecord& sr : task.scoreHistory) {
         sr.id = saveScoreRecord(connStr, task.id, sr);
     }
 }
 
 //save the most recently added score record of a task and store its new id
 void saveLatestScoreRecord(const string& connStr, Task& task) {
-    scoreRecord& sr = task.scoreHistory.back();
+    ScoreRecord& sr = task.scoreHistory.back();
     sr.id = saveScoreRecord(connStr, task.id, sr);
 }
 
@@ -182,7 +182,7 @@ void updateTaskPoints(const string& connStr, const Task& task) {
 }
 
 //save the score record's current values to its row in the database
-void updateScoreRecord(const string& connStr, const scoreRecord& record) {
+void updateScoreRecord(const string& connStr, const ScoreRecord& record) {
     pqxx::connection conn(connStr);
     pqxx::work tx(conn);
 
@@ -190,19 +190,6 @@ void updateScoreRecord(const string& connStr, const scoreRecord& record) {
             pqxx::params{record.date, record.attempts, record.successes, record.id});
 
     tx.commit();
-}
-
-//save only what the edit changed, based on what editTask reported
-void saveEdit(const string& connStr, const vector<Task>& tasks, const editResult& result) {
-    if (result.kind == EditKind::Name) {
-        updateTaskName(connStr, tasks[result.taskIndex]);
-    }
-    else if (result.kind == EditKind::Points) {
-        updateTaskPoints(connStr, tasks[result.taskIndex]);
-    }
-    else if (result.kind == EditKind::Score) {
-        updateScoreRecord(connStr, tasks[result.taskIndex].scoreHistory[result.recordIndex]);
-    }
 }
 
 //delete one task from the database by its id

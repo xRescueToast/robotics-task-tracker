@@ -3,20 +3,12 @@
 #include <string>
 #include <vector>
 
-enum class EditKind {None, Name, Points, Score};
-
 struct Season{
     int id = 0;
     std::string name;
 };
 
-struct editResult {
-    int taskIndex = -1;
-    EditKind kind = EditKind::None;
-    int recordIndex = -1;
-};
-
-struct scoreRecord {
+struct ScoreRecord {
     int id = 0;
     std::string date;
     int attempts = 0;
@@ -32,9 +24,9 @@ struct Task {
     int id = 0;
     std::string name;
     int points = 0;
-    std::vector<scoreRecord> scoreHistory;
+    std::vector<ScoreRecord> scoreHistory;
 
-    double expectedScore(const scoreRecord& record) const {
+    double expectedScore(const ScoreRecord& record) const {
         return record.reliability() * points;
     }
 };

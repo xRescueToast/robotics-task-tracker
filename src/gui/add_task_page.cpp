@@ -3,6 +3,8 @@
 #include <QFormLayout>
 #include <QPushButton>
 
+#include "tracker_limits.h"
+
 AddTaskPage::AddTaskPage(QWidget* parent) : QWidget(parent) {
     //form layout puts labels on the left and inputs on the right
     auto* form = new QFormLayout(this);
@@ -14,7 +16,7 @@ AddTaskPage::AddTaskPage(QWidget* parent) : QWidget(parent) {
     //input widgets
     m_nameEdit = new QLineEdit;
     m_pointsSpin = new QSpinBox;
-    m_pointsSpin->setRange(0, 1000);
+    m_pointsSpin->setRange(kMinPoints, kMaxPoints);
 
     //buttons
     auto* saveButton = new QPushButton("Save task");

@@ -10,7 +10,7 @@
 #include <vector>
 #include "add_mission_page.h"
 #include "add_task_page.h"
-#include "task.h"
+#include "models.h"
 
 class MainWindow : public QMainWindow {
     Q_OBJECT
@@ -23,11 +23,12 @@ private:
     void onTreeItemClicked(QTreeWidgetItem* item, int column);
     void onAddTaskSaved(const QString& name, int points);
     void onAddMissionSaved(const QString& name);
+    Mission* findMission(int missionId);
 
     std::string m_connStr;
     int m_seasonId = 1;
     std::vector<Mission> m_missions;
-    int m_addTaskMission = -1;
+    int m_addTaskMissionId = -1;
 
     QSplitter* m_splitter = nullptr;
     QTreeWidget* m_taskTree = nullptr;

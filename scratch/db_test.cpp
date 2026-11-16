@@ -17,7 +17,7 @@ int main() {
         int id = saveTask(connStr, seasonId, "Test Task");
         cout << "Saved task with id " << id << "\n";
 
-        scoreRecord r;
+        ScoreRecord r;
         r.date = "2026-10-31";
         r.expectedScore = 10;
         r.actualScore = 8;
@@ -27,7 +27,7 @@ int main() {
         vector<Task> tasks = loadTasks(connStr, seasonId);
         for (const Task& t : tasks) {
             cout << t.id << ": " << t.name << " (" << t.scoreHistory.size() << " scores)\n";
-            for (const scoreRecord& s : t.scoreHistory) {
+            for (const ScoreRecord& s : t.scoreHistory) {
                 cout << "\t" << s.date << " expected " << s.expectedScore
                      << " actual " << s.actualScore << "\n";
             }

@@ -1,10 +1,27 @@
 #include <iostream>
 #include <exception>
-#include "task.h"
+#include "models.h"
 #include "console_ui.h"
 #include "storage.h"
 
 using namespace std;
+
+//save only what the edit changed, based on what editTask reported
+static void saveTaskEdit(const string& connStr, const vector<Task>& tasks, const EditResult& result){
+    switch (result.kind){
+        case EditKind::Name:
+            updateTaskName(connStr, tasks[result.taskIndex]);
+            break;
+        case EditKind::Points:
+            updateTaskPoints(connStr, tasks[result.taskIndex]);
+            break;
+        case EditKind::Score:
+            updateScoreRecord(connStr, tasks[result.taskIndex].scoreHistory[result.recordIndex]);
+            break;
+        case EditKind::None:
+            break;
+    }
+}
 
 int main(){
     string connStr;
@@ -80,7 +97,7 @@ int main(){
                     if (index >= 0) saveLatestScoreRecord(connStr, mission.tasks[index]);
                     break;
                 case 8:
-                    saveEdit(connStr, mission.tasks, editTask(mission.tasks));
+                    saveTaskEdit(connStr, mission.tasks, editTask(mission.tasks));
                     break;
                 case 9:
                     index = selectTaskToDelete(mission.tasks);

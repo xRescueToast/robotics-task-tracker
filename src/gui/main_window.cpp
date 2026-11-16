@@ -112,9 +112,9 @@ void MainWindow::loadTaskList() {
         //last child row is the gray + Add task action
         auto* addItem = new QTreeWidgetItem(missionItem);
         addItem->setText(0, "+ Add task");
-        //hidden data: the row kind and the mission's index in m_missions, read back when the row is clicked
+        //hidden data: the row kind and the mission's database id, read back when the row is clicked
         addItem->setData(0, kKindRole, static_cast<int>(TreeRowKind::AddTask));
-        addItem->setData(0, kMissionIndexRole, static_cast<int>(&mission - m_missions.data()));
+        addItem->setData(0, kMissionIdRole, mission.id);
         addItem->setForeground(0, kActionColor);
     }
 }
@@ -126,23 +126,22 @@ void MainWindow::onTreeItemClicked(QTreeWidgetItem* item, int column) {
     if (kind != TreeRowKind::AddTask) {
         return;
     }
-    int missionIndex = item->data(0, kMissionIndexRole).toInt();
     //remember the mission and show the form
-    m_addTaskMission = missionIndex;
+    m_addTaskMissionId = item->data(0, kMissionIdRole).toInt();
     m_addTaskPage->reset();
     m_rightStack->setCurrentIndex(1);
 }
 
 void MainWindow::onAddTaskSaved(const QString& name, int points) {
-    //guard against a bad mission index
-    if (m_addTaskMission < 0 || m_addTaskMission >= static_cast<int>(m_missions.size())) {
+    //guard against a mission that no longer exists
+    const Mission* mission = findMission(m_addTaskMissionId);
+    if (!mission) {
         return;
     }
-    const Mission& mission = m_missions[m_addTaskMission];
 
     //save to the database
     try {
-        saveTask(m_connStr, mission.id, name.toStdString(), points);
+        saveTask(m_connStr, mission->id, name.toStdString(), points);
     } catch (const std::exception& e) {
         QMessageBox::warning(this, "Save error", e.what());
         return;
@@ -167,4 +166,14 @@ void MainWindow::onAddMissionSaved(const QString& name) {
     //refresh the tree and go back to the table
     loadTaskList();
     m_rightStack->setCurrentIndex(0);
+}
+
+//finds a loaded mission by its database id, nullptr if it is not loaded
+Mission* MainWindow::findMission(int missionId) {
+    for (Mission& mission : m_missions) {
+        if (mission.id == missionId) {
+            return &mission;
+        }
+    }
+    return nullptr;
 }

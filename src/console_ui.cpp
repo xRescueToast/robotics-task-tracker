@@ -5,11 +5,12 @@
 #include <string>
 #include <vector>
 #include "console_ui.h"
+#include "tracker_limits.h"
 
 using namespace std;
 
 //keep asking until the user types a whole number between min and max
-int getValidInt(const string& prompt, int min, int max){
+static int getValidInt(const string& prompt, int min, int max){
     int value;
     while (true){
         cout << prompt;
@@ -24,7 +25,7 @@ int getValidInt(const string& prompt, int min, int max){
 }
 
 //ask a yes/no question and return true for yes
-bool confirm(const string& prompt){
+static bool confirm(const string& prompt){
     cout << prompt << " (y/n): ";
     char answer;
     while (!(cin >> answer) || (answer != 'y' && answer != 'Y' && answer != 'n' && answer != 'N')){
@@ -37,7 +38,7 @@ bool confirm(const string& prompt){
 }
 
 //helper function that gets the current date in YYYY-MM-DD format
-string getCurrentDate(){
+static string getCurrentDate(){
     time_t now = time(nullptr);
 
     tm localTime;
@@ -54,14 +55,14 @@ string getCurrentDate(){
 }
 
 //read the attempts and successes for a run, successes can never be more than attempts
-void readAttempts(scoreRecord& sr){
-    sr.attempts = getValidInt("Enter number of attempts: ", 1, 100);
+static void readAttempts(ScoreRecord& sr){
+    sr.attempts = getValidInt("Enter number of attempts: ", kMinAttempts, kMaxAttempts);
     sr.successes = getValidInt("Enter number of successes: ", 0, sr.attempts);
 }
 
 //helper function that reads in a score record from the user
-scoreRecord readScoreRecord(){
-    scoreRecord sr;
+static ScoreRecord readScoreRecord(){
+    ScoreRecord sr;
     readAttempts(sr);
     sr.date = getCurrentDate();
     return sr;
@@ -133,14 +134,14 @@ void addTask(vector<Task>& tasks){
     Task t;
     cout << "Enter task name: ";
     getline(cin, t.name);
-    t.points = getValidInt("Enter possible points: ", 0, 1000);
+    t.points = getValidInt("Enter possible points: ", kMinPoints, kMaxPoints);
     //read in the first run of attempts for the task
     t.scoreHistory.push_back(readScoreRecord());
     tasks.push_back(t);
 }
 
 //print one score record with its calculated reliability and expected score
-void printScoreRecord(const Task& task, const scoreRecord& sr){
+static void printScoreRecord(const Task& task, const ScoreRecord& sr){
     cout << fixed << setprecision(1);
     cout << "\tSuccesses: " << sr.successes << "/" << sr.attempts << "\n";
     cout << "\tReliability: " << sr.reliability() * 100 << "%\n";
@@ -161,7 +162,7 @@ void viewTasks(const vector<Task>& tasks){
         cout << "Task " << taskNumber << ": " << task.name << " (" << task.points << " points)\n";
         //record counter
         int recordNumber = 1;
-        for (const scoreRecord& sr : task.scoreHistory){
+        for (const ScoreRecord& sr : task.scoreHistory){
             //display the date of the score record and its number in the history
             cout << "Score Record " << recordNumber++ << " (" << sr.date << ")" << ":\n";
             printScoreRecord(task, sr);
@@ -171,7 +172,7 @@ void viewTasks(const vector<Task>& tasks){
     }
 }
 
-size_t selectTask(const vector<Task>& tasks){
+static size_t selectTask(const vector<Task>& tasks){
     for (size_t i = 0; i < tasks.size(); i++){
         cout << i + 1 << ". " << tasks[i].name << "\n";
     }
@@ -180,22 +181,22 @@ size_t selectTask(const vector<Task>& tasks){
 }
 
 //helper function for edit task that handles changing the name of a task
-void editTaskName(Task& task){
+static void editTaskName(Task& task){
     cout << "Current name: " << task.name << "\n";
     cout << "Enter new name: ";
     getline(cin, task.name);
 }
 
 //helper function for edit task that handles changing the possible points of a task
-void editTaskPoints(Task& task){
+static void editTaskPoints(Task& task){
     cout << "Current points: " << task.points << "\n";
-    task.points = getValidInt("Enter new possible points: ", 0, 1000);
+    task.points = getValidInt("Enter new possible points: ", kMinPoints, kMaxPoints);
 }
 
-size_t selectScoreRecord(const Task& task){
+static size_t selectScoreRecord(const Task& task){
     //list the records belonging to the passed task
     for (size_t i = 0; i < task.scoreHistory.size(); i++){
-        const scoreRecord& sr = task.scoreHistory[i];
+        const ScoreRecord& sr = task.scoreHistory[i];
         cout << i + 1 << ". " << sr.date << " (" << sr.successes << "/" << sr.attempts << ")\n";
     }
     //prompt user to pick from the listed records
@@ -203,9 +204,9 @@ size_t selectScoreRecord(const Task& task){
     return (size_t)(recordNumber - 1);
 }
 
-int editScoreRecord(Task& task){
+static int editScoreRecord(Task& task){
     size_t recordIndex = selectScoreRecord(task);
-    scoreRecord& sr = task.scoreHistory[recordIndex];
+    ScoreRecord& sr = task.scoreHistory[recordIndex];
 
     cout << "Current: " << sr.successes << "/" << sr.attempts << "\n";
     readAttempts(sr);
@@ -214,8 +215,8 @@ int editScoreRecord(Task& task){
 }
 
 //edit task information
-editResult editTask(vector<Task>& tasks){
-    editResult result;
+EditResult editTask(vector<Task>& tasks){
+    EditResult result;
     if (tasks.empty()){
         cout << "No tasks available to edit.\n";
         return result;
