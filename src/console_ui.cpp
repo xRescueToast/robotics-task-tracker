@@ -10,11 +10,11 @@
 using namespace std;
 
 //keep asking until the user types a whole number between min and max
-static int getValidInt(const string& prompt, int min, int max){
+static int getValidInt(const string& prompt, int min, int max) {
     int value;
-    while (true){
+    while (true) {
         cout << prompt;
-        if (cin >> value && value >= min && value <= max){
+        if (cin >> value && value >= min && value <= max) {
             cin.ignore(1000, '\n');
             return value;
         }
@@ -25,10 +25,10 @@ static int getValidInt(const string& prompt, int min, int max){
 }
 
 //ask a yes/no question and return true for yes
-static bool confirm(const string& prompt){
+static bool confirm(const string& prompt) {
     cout << prompt << " (y/n): ";
     char answer;
-    while (!(cin >> answer) || (answer != 'y' && answer != 'Y' && answer != 'n' && answer != 'N')){
+    while (!(cin >> answer) || (answer != 'y' && answer != 'Y' && answer != 'n' && answer != 'N')) {
         cout << "Invalid input, enter y or n: ";
         cin.clear();
         cin.ignore(1000, '\n');
@@ -38,13 +38,12 @@ static bool confirm(const string& prompt){
 }
 
 //helper function that gets the current date in YYYY-MM-DD format
-static string getCurrentDate(){
+static string getCurrentDate() {
     time_t now = time(nullptr);
 
     tm localTime;
 
-    if (localtime_s(&localTime, &now) != 0)
-    {
+    if (localtime_s(&localTime, &now) != 0) {
         return "";
     }
 
@@ -55,13 +54,13 @@ static string getCurrentDate(){
 }
 
 //read the attempts and successes for a run, successes can never be more than attempts
-static void readAttempts(ScoreRecord& sr){
+static void readAttempts(ScoreRecord& sr) {
     sr.attempts = getValidInt("Enter number of attempts: ", kMinAttempts, kMaxAttempts);
     sr.successes = getValidInt("Enter number of successes: ", 0, sr.attempts);
 }
 
 //helper function that reads in a score record from the user
-static ScoreRecord readScoreRecord(){
+static ScoreRecord readScoreRecord() {
     ScoreRecord sr;
     readAttempts(sr);
     sr.date = getCurrentDate();
@@ -69,21 +68,21 @@ static ScoreRecord readScoreRecord(){
 }
 
 //the label shown for a mission, its name already includes the mission number
-string missionLabel(const Mission& mission){
+string missionLabel(const Mission& mission) {
     return mission.name;
 }
 
 //create mission, returns false if the name is already used so nothing gets saved
-bool addMission(vector<Mission>& missions){
+bool addMission(vector<Mission>& missions) {
     Mission m;
     cout << "Enter mission name: ";
     getline(cin, m.name);
-    if (m.name.empty()){
+    if (m.name.empty()) {
         cout << "Mission name can't be empty.\n";
         return false;
     }
-    for (const Mission& existing : missions){
-        if (existing.name == m.name){
+    for (const Mission& existing : missions) {
+        if (existing.name == m.name) {
             cout << "A mission with that name already exists.\n";
             return false;
         }
@@ -93,20 +92,20 @@ bool addMission(vector<Mission>& missions){
 }
 
 //print every mission with its list number and task count
-void viewMissions(const vector<Mission>& missions){
-    if (missions.empty()){
+void viewMissions(const vector<Mission>& missions) {
+    if (missions.empty()) {
         cout << "No missions yet. Add one first.\n";
         return;
     }
     cout << "Missions:\n";
-    for (size_t i = 0; i < missions.size(); i++){
+    for (size_t i = 0; i < missions.size(); i++) {
         cout << i + 1 << ". " << missionLabel(missions[i]) << " (" << missions[i].tasks.size() << " tasks)\n";
     }
 }
 
 //list the missions and return the chosen index, or -1 if there are none
-int selectMission(const vector<Mission>& missions){
-    if (missions.empty()){
+int selectMission(const vector<Mission>& missions) {
+    if (missions.empty()) {
         cout << "No missions yet. Add one first.\n";
         return -1;
     }
@@ -116,13 +115,13 @@ int selectMission(const vector<Mission>& missions){
 }
 
 //ask which mission to delete and confirm it, returns the index or -1 if nothing should be deleted
-int selectMissionToDelete(const vector<Mission>& missions){
+int selectMissionToDelete(const vector<Mission>& missions) {
     cout << "Select a mission to delete:\n";
     int missionIndex = selectMission(missions);
-    if (missionIndex < 0){
+    if (missionIndex < 0) {
         return -1;
     }
-    if (!confirm("Delete \"" + missionLabel(missions[missionIndex]) + "\" and all of its tasks?")){
+    if (!confirm("Delete \"" + missionLabel(missions[missionIndex]) + "\" and all of its tasks?")) {
         cout << "Delete cancelled.\n";
         return -1;
     }
@@ -130,7 +129,7 @@ int selectMissionToDelete(const vector<Mission>& missions){
 }
 
 //create task
-void addTask(vector<Task>& tasks){
+void addTask(vector<Task>& tasks) {
     Task t;
     cout << "Enter task name: ";
     getline(cin, t.name);
@@ -141,7 +140,7 @@ void addTask(vector<Task>& tasks){
 }
 
 //print one score record with its calculated reliability and expected score
-static void printScoreRecord(const Task& task, const ScoreRecord& sr){
+static void printScoreRecord(const Task& task, const ScoreRecord& sr) {
     cout << fixed << setprecision(1);
     cout << "\tSuccesses: " << sr.successes << "/" << sr.attempts << "\n";
     cout << "\tReliability: " << sr.reliability() * 100 << "%\n";
@@ -150,19 +149,19 @@ static void printScoreRecord(const Task& task, const ScoreRecord& sr){
 }
 
 //loop through tasks and display their details to the user
-void viewTasks(const vector<Task>& tasks){
-    if (tasks.empty()){
+void viewTasks(const vector<Task>& tasks) {
+    if (tasks.empty()) {
         cout << "This mission has no tasks yet.\n";
         return;
     }
     int taskNumber = 1;
     cout << "-----------------------------\n";
-    for (const Task& task : tasks){
+    for (const Task& task : tasks) {
         //print task data
         cout << "Task " << taskNumber << ": " << task.name << " (" << task.points << " points)\n";
         //record counter
         int recordNumber = 1;
-        for (const ScoreRecord& sr : task.scoreHistory){
+        for (const ScoreRecord& sr : task.scoreHistory) {
             //display the date of the score record and its number in the history
             cout << "Score Record " << recordNumber++ << " (" << sr.date << ")" << ":\n";
             printScoreRecord(task, sr);
@@ -172,8 +171,8 @@ void viewTasks(const vector<Task>& tasks){
     }
 }
 
-static size_t selectTask(const vector<Task>& tasks){
-    for (size_t i = 0; i < tasks.size(); i++){
+static size_t selectTask(const vector<Task>& tasks) {
+    for (size_t i = 0; i < tasks.size(); i++) {
         cout << i + 1 << ". " << tasks[i].name << "\n";
     }
     int taskNumber = getValidInt("Enter the task number: ", 1, (int)tasks.size());
@@ -181,21 +180,21 @@ static size_t selectTask(const vector<Task>& tasks){
 }
 
 //helper function for edit task that handles changing the name of a task
-static void editTaskName(Task& task){
+static void editTaskName(Task& task) {
     cout << "Current name: " << task.name << "\n";
     cout << "Enter new name: ";
     getline(cin, task.name);
 }
 
 //helper function for edit task that handles changing the possible points of a task
-static void editTaskPoints(Task& task){
+static void editTaskPoints(Task& task) {
     cout << "Current points: " << task.points << "\n";
     task.points = getValidInt("Enter new possible points: ", kMinPoints, kMaxPoints);
 }
 
-static size_t selectScoreRecord(const Task& task){
+static size_t selectScoreRecord(const Task& task) {
     //list the records belonging to the passed task
-    for (size_t i = 0; i < task.scoreHistory.size(); i++){
+    for (size_t i = 0; i < task.scoreHistory.size(); i++) {
         const ScoreRecord& sr = task.scoreHistory[i];
         cout << i + 1 << ". " << sr.date << " (" << sr.successes << "/" << sr.attempts << ")\n";
     }
@@ -204,7 +203,7 @@ static size_t selectScoreRecord(const Task& task){
     return (size_t)(recordNumber - 1);
 }
 
-static int editScoreRecord(Task& task){
+static int editScoreRecord(Task& task) {
     size_t recordIndex = selectScoreRecord(task);
     ScoreRecord& sr = task.scoreHistory[recordIndex];
 
@@ -215,9 +214,9 @@ static int editScoreRecord(Task& task){
 }
 
 //edit task information
-EditResult editTask(vector<Task>& tasks){
+EditResult editTask(vector<Task>& tasks) {
     EditResult result;
-    if (tasks.empty()){
+    if (tasks.empty()) {
         cout << "No tasks available to edit.\n";
         return result;
     }
@@ -232,20 +231,17 @@ EditResult editTask(vector<Task>& tasks){
 
     //apply the chosen edit and record only what was actually changed in the result
     //a task with no score records leaves the result empty so nothing gets saved
-    if (editChoice == 1){
+    if (editChoice == 1) {
         editTaskName(tasks[taskIndex]);
         result.kind = EditKind::Name;
         result.taskIndex = (int)taskIndex;
-    }
-    else if (editChoice == 2){
+    } else if (editChoice == 2) {
         editTaskPoints(tasks[taskIndex]);
         result.kind = EditKind::Points;
         result.taskIndex = (int)taskIndex;
-    }
-    else if (tasks[taskIndex].scoreHistory.empty()){
+    } else if (tasks[taskIndex].scoreHistory.empty()) {
         cout << "This task has no score records to edit.\n";
-    }
-    else{
+    } else {
         result.recordIndex = editScoreRecord(tasks[taskIndex]);
         result.taskIndex = (int)taskIndex;
         result.kind = EditKind::Score;
@@ -254,8 +250,8 @@ EditResult editTask(vector<Task>& tasks){
 }
 
 //add score record to a task
-int addScoreRecord(vector<Task>& tasks){
-    if (tasks.empty()){
+int addScoreRecord(vector<Task>& tasks) {
+    if (tasks.empty()) {
         cout << "No tasks available to add score records.\n";
         return -1;
     }
@@ -267,8 +263,8 @@ int addScoreRecord(vector<Task>& tasks){
 }
 
 //ask which task to delete and confirm it, returns the index or -1 if nothing should be deleted
-int selectTaskToDelete(const vector<Task>& tasks){
-    if (tasks.empty()){
+int selectTaskToDelete(const vector<Task>& tasks) {
+    if (tasks.empty()) {
         cout << "No tasks available to delete.\n";
         return -1;
     }
@@ -276,7 +272,7 @@ int selectTaskToDelete(const vector<Task>& tasks){
     cout << "Select a task to delete:\n";
     size_t taskIndex = selectTask(tasks);
 
-    if (!confirm("Delete \"" + tasks[taskIndex].name + "\" and all of its score records?")){
+    if (!confirm("Delete \"" + tasks[taskIndex].name + "\" and all of its score records?")) {
         cout << "Delete cancelled.\n";
         return -1;
     }

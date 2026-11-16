@@ -5,7 +5,7 @@
 #include "models.h"
 
 //which part of a task the console edit changed, so main only saves that part
-enum class EditKind {None, Name, Points, Score};
+enum class EditKind { None, Name, Points, Score };
 
 //what editTask changed, indexes are -1 when nothing was edited
 struct EditResult {

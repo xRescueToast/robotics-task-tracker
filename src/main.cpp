@@ -7,8 +7,8 @@
 using namespace std;
 
 //save only what the edit changed, based on what editTask reported
-static void saveTaskEdit(const string& connStr, const vector<Task>& tasks, const EditResult& result){
-    switch (result.kind){
+static void saveTaskEdit(const string& connStr, const vector<Task>& tasks, const EditResult& result) {
+    switch (result.kind) {
         case EditKind::Name:
             updateTaskName(connStr, tasks[result.taskIndex]);
             break;
@@ -23,15 +23,14 @@ static void saveTaskEdit(const string& connStr, const vector<Task>& tasks, const
     }
 }
 
-int main(){
+int main() {
     string connStr;
     vector<Mission> missions;
     int seasonId = 1;
-    try{
+    try {
         connStr = loadConnString("tracker.env");
         missions = loadMissions(connStr, seasonId);
-    }
-    catch(const exception& e){
+    } catch (const exception& e) {
         cout << "Could not start: " << e.what() << "\n";
         return 1;
     }
@@ -41,7 +40,7 @@ int main(){
     Mission noMission;
     int index;
     bool active = true;
-    while(active){
+    while (active) {
         cout << "\nCurrent mission: " << (current >= 0 ? missionLabel(missions[current]) : "none") << "\n";
         cout << "1. Add Mission\n";
         cout << "2. View Missions\n";
@@ -54,7 +53,7 @@ int main(){
         cout << "9. Delete Task\n";
         cout << "10. Exit\n";
         int choice;
-        if(!(cin >> choice)){
+        if (!(cin >> choice)) {
             cout << "Invalid input. Please enter a number.\n";
             cin.clear();
             cin.ignore(1000, '\n');
@@ -63,27 +62,34 @@ int main(){
         cin.ignore(1000, '\n');
 
         //task options need a mission to work on
-        if(choice >= 5 && choice <= 9 && current < 0){
+        if (choice >= 5 && choice <= 9 && current < 0) {
             cout << "Select or add a mission first.\n";
             continue;
         }
         Mission& mission = (current >= 0) ? missions[current] : noMission;
 
-        try{
-            switch(choice){
+        try {
+            switch (choice) {
                 case 1:
-                    if (addMission(missions)) { saveMission(connStr, seasonId, missions.back()); current = (int)missions.size() - 1; }
+                    if (addMission(missions)) {
+                        saveMission(connStr, seasonId, missions.back());
+                        current = (int)missions.size() - 1;
+                    }
                     break;
                 case 2:
                     viewMissions(missions);
                     break;
                 case 3:
                     index = selectMission(missions);
-                    if (index >= 0) current = index;
+                    if (index >= 0)
+                        current = index;
                     break;
                 case 4:
                     index = selectMissionToDelete(missions);
-                    if (index >= 0) { removeMission(connStr, missions, index); current = -1; }
+                    if (index >= 0) {
+                        removeMission(connStr, missions, index);
+                        current = -1;
+                    }
                     break;
                 case 5:
                     addTask(mission.tasks);
@@ -94,14 +100,16 @@ int main(){
                     break;
                 case 7:
                     index = addScoreRecord(mission.tasks);
-                    if (index >= 0) saveLatestScoreRecord(connStr, mission.tasks[index]);
+                    if (index >= 0)
+                        saveLatestScoreRecord(connStr, mission.tasks[index]);
                     break;
                 case 8:
                     saveTaskEdit(connStr, mission.tasks, editTask(mission.tasks));
                     break;
                 case 9:
                     index = selectTaskToDelete(mission.tasks);
-                    if (index >= 0) removeTask(connStr, mission.tasks, index);
+                    if (index >= 0)
+                        removeTask(connStr, mission.tasks, index);
                     break;
                 case 10:
                     active = false;
@@ -109,14 +117,12 @@ int main(){
                 default:
                     cout << "Invalid choice. Please try again.\n";
             }
-        }
-        catch (const exception& e){
+        } catch (const exception& e) {
             cout << "Error: " << e.what() << "\n";
-            try{
+            try {
                 missions = loadMissions(connStr, seasonId);
                 current = -1;
-            }
-            catch (const exception&){
+            } catch (const exception&) {
                 cout << "Could not refresh the list. Restart the app.\n";
             }
         }

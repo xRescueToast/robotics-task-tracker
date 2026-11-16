@@ -3,7 +3,7 @@
 #include <string>
 #include <vector>
 
-struct Season{
+struct Season {
     int id = 0;
     std::string name;
 };
@@ -15,7 +15,8 @@ struct ScoreRecord {
     int successes = 0;
 
     double reliability() const {
-        if (attempts == 0) return 0.0;
+        if (attempts == 0)
+            return 0.0;
         return static_cast<double>(successes) / attempts;
     }
 };

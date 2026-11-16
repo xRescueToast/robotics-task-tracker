@@ -10,8 +10,4 @@ enum TreeRole {
 };
 
 //kinds of rows in the mission and task tree
-enum class TreeRowKind {
-    Mission,
-    Task,
-    AddTask
-};
+enum class TreeRowKind { Mission, Task, AddTask };

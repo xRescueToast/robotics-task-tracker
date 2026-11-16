@@ -20,10 +20,9 @@ string loadConnString(const string& path) {
 static vector<ScoreRecord> loadScoreRecords(pqxx::work& tx, int taskId) {
     vector<ScoreRecord> records;
 
-    pqxx::result rows = tx.exec(
-        "SELECT id, recorded_date, attempts, successes "
-        "FROM score_records WHERE task_id = $1 ORDER BY recorded_date, id",
-        pqxx::params{taskId});
+    pqxx::result rows = tx.exec("SELECT id, recorded_date, attempts, successes "
+                                "FROM score_records WHERE task_id = $1 ORDER BY recorded_date, id",
+                                pqxx::params{taskId});
 
     for (const auto& row : rows) {
         ScoreRecord sr;
@@ -40,9 +39,8 @@ static vector<ScoreRecord> loadScoreRecords(pqxx::work& tx, int taskId) {
 static vector<Task> loadTasksForMission(pqxx::work& tx, int missionId) {
     vector<Task> tasks;
 
-    pqxx::result rows = tx.exec(
-        "SELECT id, name, points FROM tasks WHERE mission_id = $1 ORDER BY id",
-        pqxx::params{missionId});
+    pqxx::result rows =
+        tx.exec("SELECT id, name, points FROM tasks WHERE mission_id = $1 ORDER BY id", pqxx::params{missionId});
 
     for (const auto& row : rows) {
         Task t;
@@ -62,9 +60,8 @@ vector<Mission> loadMissions(const string& connStr, int seasonId) {
     pqxx::connection conn(connStr);
     pqxx::work tx(conn);
 
-    pqxx::result rows = tx.exec(
-        "SELECT id, name FROM missions WHERE season_id = $1 ORDER BY id",
-        pqxx::params{seasonId});
+    pqxx::result rows =
+        tx.exec("SELECT id, name FROM missions WHERE season_id = $1 ORDER BY id", pqxx::params{seasonId});
 
     for (const auto& row : rows) {
         Mission m;
@@ -81,9 +78,8 @@ void saveMission(const string& connStr, int seasonId, Mission& mission) {
     pqxx::connection conn(connStr);
     pqxx::work tx(conn);
 
-    mission.id = tx.query_value<int>(
-        "INSERT INTO missions (season_id, name) VALUES ($1, $2) RETURNING id",
-        pqxx::params{seasonId, mission.name});
+    mission.id = tx.query_value<int>("INSERT INTO missions (season_id, name) VALUES ($1, $2) RETURNING id",
+                                     pqxx::params{seasonId, mission.name});
 
     tx.commit();
 }
@@ -113,9 +109,8 @@ int saveTask(const string& connStr, int missionId, const string& name, int point
     //insert the task. $1-$3 are placeholders filled in by pqxx::params,
     //the typed name is never pasted into the SQL (prevents SQL injection).
     //RETURNING id makes Postgres send back the new row's id.
-    int newId = tx.query_value<int>(
-        "INSERT INTO tasks (mission_id, name, points) VALUES ($1, $2, $3) RETURNING id",
-        pqxx::params{missionId, name, points});
+    int newId = tx.query_value<int>("INSERT INTO tasks (mission_id, name, points) VALUES ($1, $2, $3) RETURNING id",
+                                    pqxx::params{missionId, name, points});
 
     //saves the changes; without commit the insert would be rolled back
     tx.commit();
@@ -133,10 +128,9 @@ int saveScoreRecord(const string& connStr, int taskId, const ScoreRecord& record
     //run the INSERT with placeholders $1-$4, filled in order by pqxx::params
     //taskId links the score to its task, and a bad id makes postgres throw an error
     //RETURNING id sends back the id of the new row
-    int newId = tx.query_value<int>(
-        "INSERT INTO score_records (task_id, recorded_date, attempts, successes) "
-        "VALUES ($1, $2, $3, $4) RETURNING id",
-        pqxx::params{taskId, record.date, record.attempts, record.successes});
+    int newId = tx.query_value<int>("INSERT INTO score_records (task_id, recorded_date, attempts, successes) "
+                                    "VALUES ($1, $2, $3, $4) RETURNING id",
+                                    pqxx::params{taskId, record.date, record.attempts, record.successes});
 
     //save the changes, without commit the insert is rolled back
     tx.commit();
@@ -164,8 +158,7 @@ void updateTaskName(const string& connStr, const Task& task) {
     pqxx::connection conn(connStr);
     pqxx::work tx(conn);
 
-    tx.exec("UPDATE tasks SET name = $1 WHERE id = $2",
-            pqxx::params{task.name, task.id});
+    tx.exec("UPDATE tasks SET name = $1 WHERE id = $2", pqxx::params{task.name, task.id});
 
     tx.commit();
 }
@@ -175,8 +168,7 @@ void updateTaskPoints(const string& connStr, const Task& task) {
     pqxx::connection conn(connStr);
     pqxx::work tx(conn);
 
-    tx.exec("UPDATE tasks SET points = $1 WHERE id = $2",
-            pqxx::params{task.points, task.id});
+    tx.exec("UPDATE tasks SET points = $1 WHERE id = $2", pqxx::params{task.points, task.id});
 
     tx.commit();
 }

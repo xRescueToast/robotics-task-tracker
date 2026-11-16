@@ -20,9 +20,7 @@ static constexpr int kBoxRadius = 3;
 static const QColor kIconHoverColor(255, 255, 255, 40);
 
 TreeItemDelegate::TreeItemDelegate(QObject* parent)
-    : QStyledItemDelegate(parent),
-      m_pencilIcon(":/icons/pencil.svg"),
-      m_trashIcon(":/icons/trash.svg") {
+    : QStyledItemDelegate(parent), m_pencilIcon(":/icons/pencil.svg"), m_trashIcon(":/icons/trash.svg") {
     //watch the tree's viewport so we know when the mouse leaves it
     if (auto* view = qobject_cast<QAbstractItemView*>(parent)) {
         view->viewport()->installEventFilter(this);
@@ -52,7 +50,8 @@ void TreeItemDelegate::paint(QPainter* painter, const QStyleOptionViewItem& opti
     QString shown = rowOption.fontMetrics.elidedText(text, Qt::ElideRight, textRect.width());
     bool enabled = rowOption.state & QStyle::State_Enabled;
     //normal text color, the windows 11 style keeps it on selected rows too
-    style->drawItemText(painter, textRect, rowOption.displayAlignment, rowOption.palette, enabled, shown, QPalette::Text);
+    style->drawItemText(painter, textRect, rowOption.displayAlignment, rowOption.palette, enabled, shown,
+                        QPalette::Text);
 
     //highlight the icon under the mouse
     painter->save();
@@ -76,7 +75,8 @@ void TreeItemDelegate::paint(QPainter* painter, const QStyleOptionViewItem& opti
 }
 
 //watches mouse movement so the icon highlight and cursor follow the mouse
-bool TreeItemDelegate::editorEvent(QEvent* event, QAbstractItemModel* model, const QStyleOptionViewItem& option, const QModelIndex& index) {
+bool TreeItemDelegate::editorEvent(QEvent* event, QAbstractItemModel* model, const QStyleOptionViewItem& option,
+                                   const QModelIndex& index) {
     if (event->type() == QEvent::MouseMove) {
         //remember where the mouse is
         m_mousePos = static_cast<QMouseEvent*>(event)->position().toPoint();
