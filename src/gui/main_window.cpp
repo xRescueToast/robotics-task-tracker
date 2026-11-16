@@ -38,7 +38,8 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent) {
 
     //hover icons for edit and delete
     m_taskTree->setMouseTracking(true);
-    m_taskTree->setItemDelegate(new TreeItemDelegate(m_taskTree));
+    auto* treeDelegate = new TreeItemDelegate(m_taskTree);
+    m_taskTree->setItemDelegate(treeDelegate);
 
     m_addMissionButton = new QPushButton("+ Add mission");
     sidebarLayout->addWidget(m_taskTree);
@@ -64,6 +65,9 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent) {
 
     //call onTreeItemClicked whenever a row in the tree is clicked
     connect(m_taskTree, &QTreeWidget::itemClicked, this, &MainWindow::onTreeItemClicked);
+    //queued so the tree finishes handling the click before a reload clears it
+    connect(treeDelegate, &TreeItemDelegate::deleteRequested, this, &MainWindow::onDeleteRequested,
+            Qt::QueuedConnection);
 
     connect(m_addTaskPage, &AddTaskPage::saveRequested, this, &MainWindow::onAddTaskSaved);
     connect(m_addTaskPage, &AddTaskPage::cancelled, this, [this]() { m_rightStack->setCurrentIndex(0); });
@@ -83,6 +87,7 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent) {
     setCentralWidget(m_splitter);
     loadTaskList();
 }
+
 //loads missions and tasks from the database and rebuilds the tree
 void MainWindow::loadTaskList() {
     //storage throws on connection or query errors shows them in a popup
@@ -101,11 +106,14 @@ void MainWindow::loadTaskList() {
         auto* missionItem = new QTreeWidgetItem(m_taskTree);
         missionItem->setText(0, QString::fromStdString(mission.name));
         missionItem->setData(0, kKindRole, static_cast<int>(TreeRowKind::Mission));
+        missionItem->setData(0, kMissionIdRole, mission.id);
         //child rows for each task indented under the mission
         for (const Task& task : mission.tasks) {
             auto* taskItem = new QTreeWidgetItem(missionItem);
             taskItem->setText(0, QString::fromStdString(task.name));
             taskItem->setData(0, kKindRole, static_cast<int>(TreeRowKind::Task));
+            taskItem->setData(0, kMissionIdRole, mission.id);
+            taskItem->setData(0, kTaskIdRole, task.id);
         }
         //open the mission so its tasks are visible right away
         missionItem->setExpanded(true);
@@ -176,4 +184,63 @@ Mission* MainWindow::findMission(int missionId) {
         }
     }
     return nullptr;
+}
+
+//works out which mission or task the trash icon belongs to and hands it off
+void MainWindow::onDeleteRequested(const QModelIndex& index) {
+    Mission* mission = findMission(index.data(kMissionIdRole).toInt());
+    if (!mission) {
+        return;
+    }
+
+    auto kind = static_cast<TreeRowKind>(index.data(kKindRole).toInt());
+    if (kind == TreeRowKind::Mission) {
+        deleteMissionRow(*mission);
+        return;
+    }
+
+    int taskId = index.data(kTaskIdRole).toInt();
+    for (const Task& task : mission->tasks) {
+        if (task.id == taskId) {
+            deleteTaskRow(task);
+            return;
+        }
+    }
+}
+
+//asks first, then deletes the mission with its tasks and score records
+void MainWindow::deleteMissionRow(const Mission& mission) {
+    QString text =
+        QString("Delete \"%1\" and all of its tasks and score records?").arg(QString::fromStdString(mission.name));
+    if (QMessageBox::question(this, "Delete mission", text, QMessageBox::Yes | QMessageBox::No, QMessageBox::No) !=
+        QMessageBox::Yes) {
+        return;
+    }
+    try {
+        deleteMission(m_connStr, mission.id);
+    } catch (const std::exception& e) {
+        QMessageBox::warning(this, "Delete error", e.what());
+        return;
+    }
+    //reload last, it replaces m_missions so mission is not valid after this
+    loadTaskList();
+    m_rightStack->setCurrentIndex(0);
+}
+
+//asks first, then deletes the task and its score records
+void MainWindow::deleteTaskRow(const Task& task) {
+    QString text = QString("Delete \"%1\" and all of its score records?").arg(QString::fromStdString(task.name));
+    if (QMessageBox::question(this, "Delete task", text, QMessageBox::Yes | QMessageBox::No, QMessageBox::No) !=
+        QMessageBox::Yes) {
+        return;
+    }
+    try {
+        deleteTask(m_connStr, task.id);
+    } catch (const std::exception& e) {
+        QMessageBox::warning(this, "Delete error", e.what());
+        return;
+    }
+    //reload last, it replaces m_missions so task is not valid after this
+    loadTaskList();
+    m_rightStack->setCurrentIndex(0);
 }

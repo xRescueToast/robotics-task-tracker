@@ -13,6 +13,10 @@ public:
     bool editorEvent(QEvent* event, QAbstractItemModel* model, const QStyleOptionViewItem& option,
                      const QModelIndex& index) override;
 
+signals:
+    void editRequested(const QModelIndex& index);
+    void deleteRequested(const QModelIndex& index);
+
 protected:
     bool eventFilter(QObject* watched, QEvent* event) override;
 
@@ -20,6 +24,7 @@ private:
     bool hasIcons(const QModelIndex& index) const;
     QRect trashRect(const QRect& row) const;
     QRect pencilRect(const QRect& row) const;
+    QRect hitRect(const QRect& iconRect, const QRect& row) const;
 
     QIcon m_pencilIcon;
     QIcon m_trashIcon;

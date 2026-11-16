@@ -59,11 +59,8 @@ void TreeItemDelegate::paint(QPainter* painter, const QStyleOptionViewItem& opti
     painter->setPen(Qt::NoPen);
     painter->setBrush(kIconHoverColor);
     for (const QRect& iconRect : {pencilRect(option.rect), trashRect(option.rect)}) {
-        if (iconRect.contains(m_mousePos)) {
-            //square box as tall as the row minus the inset, centered on the icon
-            int side = option.rect.height() - kBoxInset * 2;
-            QRect box(0, 0, side, side);
-            box.moveCenter(iconRect.center());
+        QRect box = hitRect(iconRect, option.rect);
+        if (box.contains(m_mousePos)) {
             painter->drawRoundedRect(QRectF(box), kBoxRadius, kBoxRadius);
         }
     }
@@ -83,7 +80,8 @@ bool TreeItemDelegate::editorEvent(QEvent* event, QAbstractItemModel* model, con
         auto* view = qobject_cast<QAbstractItemView*>(parent());
         if (view) {
             //pointing hand over an icon, default cursor everywhere else
-            bool overIcon = pencilRect(option.rect).contains(m_mousePos) || trashRect(option.rect).contains(m_mousePos);
+            bool overIcon = hitRect(pencilRect(option.rect), option.rect).contains(m_mousePos) ||
+                            hitRect(trashRect(option.rect), option.rect).contains(m_mousePos);
             if (overIcon && hasIcons(index)) {
                 view->viewport()->setCursor(Qt::PointingHandCursor);
             } else {
@@ -91,6 +89,23 @@ bool TreeItemDelegate::editorEvent(QEvent* event, QAbstractItemModel* model, con
             }
             //repaint just this row so the highlight follows the mouse
             view->viewport()->update(option.rect);
+        }
+    }
+
+    //left click released on an icon: announce it and tell the tree the click was handled
+    if (event->type() == QEvent::MouseButtonRelease && hasIcons(index)) {
+        auto* mouse = static_cast<QMouseEvent*>(event);
+        QPoint pos = mouse->position().toPoint();
+        if (mouse->button() != Qt::LeftButton) {
+            return false;
+        }
+        if (hitRect(pencilRect(option.rect), option.rect).contains(pos)) {
+            emit editRequested(index);
+            return true;
+        }
+        if (hitRect(trashRect(option.rect), option.rect).contains(pos)) {
+            emit deleteRequested(index);
+            return true;
         }
     }
     return QStyledItemDelegate::editorEvent(event, model, option, index);
@@ -127,4 +142,12 @@ QRect TreeItemDelegate::trashRect(const QRect& row) const {
 //pencil sits just left of the trash
 QRect TreeItemDelegate::pencilRect(const QRect& row) const {
     return trashRect(row).translated(-(kIconSize + kIconGap), 0);
+}
+
+//square as tall as the row minus the inset, centered on the icon, used for hover and clicks
+QRect TreeItemDelegate::hitRect(const QRect& iconRect, const QRect& row) const {
+    int side = row.height() - kBoxInset * 2;
+    QRect box(0, 0, side, side);
+    box.moveCenter(iconRect.center());
+    return box;
 }

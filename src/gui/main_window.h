@@ -24,6 +24,9 @@ private:
     void onAddTaskSaved(const QString& name, int points);
     void onAddMissionSaved(const QString& name);
     Mission* findMission(int missionId);
+    void onDeleteRequested(const QModelIndex& index);
+    void deleteMissionRow(const Mission& mission);
+    void deleteTaskRow(const Task& task);
 
     std::string m_connStr;
     int m_seasonId = 1;
